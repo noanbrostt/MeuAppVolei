@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Alert } from 'react-native';
 import { Link } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
 import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
@@ -39,21 +39,36 @@ const TeamsScreen = () => {
   }, []);
 
   const handleDeleteTeam = async (id: string) => {
-    if (window.confirm('Tem certeza que deseja excluir este time?')) {
-      try {
-        setLoading(true);
-        const teamDocRef = doc(db, 'teams', id);
-        await deleteDoc(teamDocRef);
-        // Atualizar a lista de times após a exclusão
-        const updatedTeams = teams.filter(team => team.id !== id);
-        setTeams(updatedTeams);
-        setLoading(false);
-      } catch (error: any) {
-        setError('Erro ao excluir o time.');
-        console.error('Erro ao excluir o time:', error);
-        setLoading(false);
-      }
-    }
+    Alert.alert(
+      'Confirmar Exclusão',
+      'Tem certeza que deseja excluir este time?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              const teamDocRef = doc(db, 'teams', id);
+              await deleteDoc(teamDocRef);
+              const updatedTeams = teams.filter(team => team.id !== id);
+              setTeams(updatedTeams);
+              setLoading(false);
+            } catch (error: any) {
+              setError('Erro ao excluir o time.');
+              console.error('Erro ao excluir o time:', error);
+              setLoading(false);
+              Alert.alert('Erro', 'Erro ao excluir o time: ' + error.message);
+            }
+          },
+        },
+      ],
+      { cancelable: false }
+    );
   };
 
   const toggleDropdown = (teamId: string) => {
