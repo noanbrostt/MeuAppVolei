@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, TouchableWithoutFeedback } from 'react-native';
 import { Link } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import Icon from 'react-native-vector-icons/FontAwesome'; // Importe os ícones
 
 interface Team {
   id: string;
@@ -14,6 +15,7 @@ const TeamsScreen = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null); // Para controlar qual dropdown está visível
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -36,6 +38,56 @@ const TeamsScreen = () => {
     fetchTeams();
   }, []);
 
+  const handleDeleteTeam = async (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este time?')) {
+      try {
+        setLoading(true);
+        const teamDocRef = doc(db, 'teams', id);
+        await deleteDoc(teamDocRef);
+        // Atualizar a lista de times após a exclusão
+        const updatedTeams = teams.filter(team => team.id !== id);
+        setTeams(updatedTeams);
+        setLoading(false);
+      } catch (error: any) {
+        setError('Erro ao excluir o time.');
+        console.error('Erro ao excluir o time:', error);
+        setLoading(false);
+      }
+    }
+  };
+
+  const toggleDropdown = (teamId: string) => {
+    setSelectedTeamId(selectedTeamId === teamId ? null : teamId);
+  };
+
+  const renderItem = ({ item }: { item: Team }) => (
+    <View style={styles.teamItemContainer}>
+      <Link href={`/screens/EditTeamScreen?id=${item.id}`} asChild>
+        <TouchableOpacity style={styles.teamItem}>
+          <View style={[styles.colorSquare, { backgroundColor: item.color }]} />
+          <Text style={styles.teamName}>{item.name}</Text>
+        </TouchableOpacity>
+      </Link>
+      <TouchableOpacity style={styles.optionsButton} onPress={() => toggleDropdown(item.id)}>
+        <Text style={styles.optionsDots}>...</Text>
+      </TouchableOpacity>
+      {selectedTeamId === item.id && (
+        <View style={styles.dropdown}>
+          <Link href={`/screens/EditTeamScreen?id=${item.id}`} asChild>
+            <TouchableOpacity style={styles.dropdownItem}>
+              <Icon name="pencil" size={16} color="black" style={styles.dropdownIcon} />
+              <Text>Editar</Text>
+            </TouchableOpacity>
+          </Link>
+          <TouchableOpacity style={styles.dropdownItem} onPress={() => handleDeleteTeam(item.id)}>
+            <Icon name="trash" size={16} color="red" style={styles.dropdownIcon} />
+            <Text style={{ color: 'red' }}>Excluir</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
+  );
+
   if (loading) {
     return <Text>Carregando as equipes...</Text>;
   }
@@ -44,29 +96,22 @@ const TeamsScreen = () => {
     return <Text>Erro: {error}</Text>;
   }
 
-  const renderItem = ({ item }: { item: Team }) => (
-    <Link href={`/screens/EditTeamScreen?id=${item.id}`} asChild>
-      <TouchableOpacity style={styles.teamItem}>
-        <View style={[styles.colorSquare, { backgroundColor: item.color }]} />
-        <Text style={styles.teamName}>{item.name}</Text>
-      </TouchableOpacity>
-    </Link>
-  );
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Lista de Equipes</Text>
-      <FlatList
-        data={teams}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-      />
-      <Link href="/screens/AddTeamScreen" asChild>
-        <TouchableOpacity style={styles.addButton}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </Link>
-    </View>
+    <TouchableWithoutFeedback onPress={() => setSelectedTeamId(null)}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Lista de Equipes</Text>
+        <FlatList
+          data={teams}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+        />
+        <Link href="/screens/AddTeamScreen" asChild>
+          <TouchableOpacity style={styles.addButton}>
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
+        </Link>
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -80,22 +125,62 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 16,
   },
-  teamItem: {
-    flexDirection: 'row', // Alinha a cor e o nome horizontalmente
-    alignItems: 'center', // Alinha verticalmente no centro
+  teamItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    padding: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     marginBottom: 8,
     borderRadius: 5,
+    justifyContent: 'space-between', // Espaço entre o nome e as opções
+  },
+  teamItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1, // Ocupa o espaço restante
   },
   colorSquare: {
     width: 20,
     height: 20,
     borderRadius: 3,
-    marginRight: 10, // Espaço entre o quadrado e o nome
+    marginRight: 10,
   },
   teamName: {
     fontSize: 16,
+    flex: 1, // Permite que o nome cresça e empurre os botões para a direita
+  },
+  optionsButton: {
+    padding: 8,
+  },
+  optionsDots: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#888',
+    marginTop: -12
+  },
+dropdown: {
+    position: 'absolute',
+    display: 'flex',
+    flexDirection: 'row',
+    right: 50,
+    backgroundColor: 'white',
+    borderRadius: 5,
+    padding: 10,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    zIndex: 10,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  dropdownIcon: {
+    marginRight: 8,
   },
   addButton: {
     backgroundColor: 'green',
