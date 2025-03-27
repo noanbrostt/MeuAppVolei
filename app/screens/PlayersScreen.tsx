@@ -110,8 +110,8 @@ const PlayersScreen = () => {
 
   const renderItem = ({ item }: { item: Player }) => (
     <View style={styles.playerItemContainer}>
-        <Link href={`/screens/editPlayerScreen?id=${item.id}`} asChild>
-        <TouchableOpacity style={styles.playerItem}>
+        <Link href={`/screens/EditPlayerScreen?playerId=${item.id}&teamId=${teamId}`} asChild>
+            <TouchableOpacity style={styles.playerItem}>
             <Text style={styles.playerNumber}>{item.number}</Text>
             <Text style={styles.playerName}>{item.fullName}</Text>
         </TouchableOpacity>
@@ -122,7 +122,7 @@ const PlayersScreen = () => {
 
         {selectedPlayerId === item.id && (
             <View style={styles.dropdown}>
-                <Link href={`/screens/EditPlayerScreen?id=${item.id}`} asChild>
+                <Link href={`/screens/EditPlayerScreen?playerId=${item.id}&teamId=${teamId}`} asChild>
                 <TouchableOpacity style={styles.dropdownItem}>
                     <Icon name="pencil" size={16} color="black" style={styles.dropdownIcon} />
                     <Text>Editar</Text>
