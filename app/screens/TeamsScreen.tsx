@@ -77,7 +77,7 @@ const TeamsScreen = () => {
 
   const renderItem = ({ item }: { item: Team }) => (
     <View style={styles.teamItemContainer}>
-      <Link href={`/screens/EditTeamScreen?id=${item.id}`} asChild>
+      <Link href={`/screens/PlayersScreen?id=${item.id}`} asChild>
         <TouchableOpacity style={styles.teamItem}>
           <View style={[styles.colorSquare, { backgroundColor: item.color }]} />
           <Text style={styles.teamName}>{item.name}</Text>
