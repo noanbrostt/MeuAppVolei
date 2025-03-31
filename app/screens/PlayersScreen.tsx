@@ -18,6 +18,7 @@ import {
   query,
   where,
   onSnapshot,
+  orderBy
 } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
@@ -51,7 +52,7 @@ const PlayersScreen = () => {
 
       try {
         const playersRef = collection(db, "players"); // Nome da coleção
-        const q = query(playersRef, where("teamId", "==", teamId)); // Filtra os jogadores do time
+        const q = query(playersRef, where("teamId", "==", teamId), orderBy("fullName", "asc")); // Filtra os jogadores do time
 
         const querySnapshot = await getDocs(q);
         const playersData = querySnapshot.docs.map((doc) => ({

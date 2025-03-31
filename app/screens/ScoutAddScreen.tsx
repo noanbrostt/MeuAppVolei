@@ -7,10 +7,11 @@ import {
   StyleSheet,
   Alert,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -22,6 +23,12 @@ interface Team {
   name: string;
 }
 
+interface Player {
+  id: string;
+  fullName: string;
+  number: number;
+}
+
 const ScoutAddScreen = () => {
   const [scoutName, setScoutName] = useState('');
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
@@ -30,6 +37,10 @@ const ScoutAddScreen = () => {
   const [errorTeams, setErrorTeams] = useState<string | null>(null);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+  const [loadingPlayers, setLoadingPlayers] = useState(false);
+  const [errorPlayers, setErrorPlayers] = useState<string | null>(null);
 
   const formattedDate = format(date, 'dd/MM/yyyy', { locale: ptBR });
 
@@ -39,10 +50,11 @@ const ScoutAddScreen = () => {
       setErrorTeams(null);
       try {
         const teamsCollection = collection(db, 'teams');
-        const teamsSnapshot = await getDocs(teamsCollection);
+        const teamsQuery = query(teamsCollection, orderBy('name', 'asc'));
+        const teamsSnapshot = await getDocs(teamsQuery);
         const teamsList = teamsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...(doc.data() as Omit<Team, 'id'>),
+        id: doc.id,
+        ...doc.data(),
         })) as Team[];
         setTeams(teamsList);
       } catch (error: any) {
@@ -57,6 +69,37 @@ const ScoutAddScreen = () => {
     fetchTeams();
   }, []);
 
+  useEffect(() => {
+    if (selectedTeamId) {
+      fetchPlayers(selectedTeamId);
+    } else {
+      setPlayers([]);
+      setSelectedPlayers([]);
+    }
+  }, [selectedTeamId]);
+
+  const fetchPlayers = async (teamId: string) => {
+    setLoadingPlayers(true);
+    setErrorPlayers(null);
+    try {
+      const playersCollectionRef = collection(db, 'players');
+      const q = query(playersCollectionRef, where('teamId', '==', teamId));
+      const playersSnapshot = await getDocs(q);
+      const playersList = playersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...(doc.data() as Omit<Player, 'id'>),
+      })) as Player[];
+      playersList.sort((a, b) => a.fullName.localeCompare(b.fullName));
+      setPlayers(playersList);
+    } catch (error: any) {
+      setErrorPlayers('Erro ao carregar os jogadores do time.');
+      console.error('Erro ao carregar os jogadores do time:', error);
+      Alert.alert('Erro', 'Erro ao carregar os jogadores do time.');
+    } finally {
+      setLoadingPlayers(false);
+    }
+  };
+
   const onChangeDate = (event: any, selectedDate: Date | undefined) => {
     const currentDate = selectedDate || date;
     setShowDatePicker(Platform.OS === 'ios');
@@ -65,6 +108,16 @@ const ScoutAddScreen = () => {
 
   const showDatepicker = () => {
     setShowDatePicker(true);
+  };
+
+  const handlePlayerSelection = (playerId: string) => {
+    if (selectedPlayers.includes(playerId)) {
+      setSelectedPlayers(selectedPlayers.filter(id => id !== playerId));
+    } else if (selectedPlayers.length < 7) {
+      setSelectedPlayers([...selectedPlayers, playerId]);
+    } else {
+      Alert.alert('Atenção', 'Você só pode selecionar 7 jogadores.');
+    }
   };
 
   const handleContinue = () => {
@@ -76,16 +129,16 @@ const ScoutAddScreen = () => {
       Alert.alert('Atenção', 'Por favor, selecione um time.');
       return;
     }
+    if (selectedPlayers.length !== 7) {
+      Alert.alert('Atenção', 'Por favor, selecione exatamente 7 jogadores.');
+      return;
+    }
 
-    router.push(`/screens/SelectPlayersScreen?teamId=${selectedTeamId}&scoutName=${scoutName}&scoutDate=${formattedDate}`);
+    router.push(`/screens/ScoutScreen?teamId=${selectedTeamId}&scoutName=${scoutName}&scoutDate=${formattedDate}&players=${selectedPlayers.join(',')}`);
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Icon name="arrow-left" size={20} color="black" />
-        <Text style={styles.backButtonText}>Voltar</Text>
-      </TouchableOpacity>
+    <ScrollView style={styles.container}>
       <Text style={styles.title}>Novo Scout</Text>
 
       <Text style={styles.label}>Nome do Scout</Text>
@@ -139,11 +192,47 @@ const ScoutAddScreen = () => {
         />
       )}
 
-      <TouchableOpacity style={styles.continueButton} onPress={handleContinue}>
+      {selectedTeamId && (
+        <View style={styles.playerSelectionContainer}>
+          <Text style={styles.label}>Selecione 7 Jogadores*</Text>
+          {loadingPlayers ? (
+            <Text>Carregando jogadores...</Text>
+          ) : errorPlayers ? (
+            <Text style={styles.error}>{errorPlayers}</Text>
+          ) : players.length > 0 ? (
+            players.map((player) => (
+              <TouchableOpacity
+                key={player.id}
+                style={[
+                  styles.playerItem,
+                  selectedPlayers.includes(player.id) && styles.selectedPlayerItem,
+                ]}
+                onPress={() => handlePlayerSelection(player.id)}
+              >
+                <Text>{player.fullName} (#{player.number})</Text>
+                {selectedPlayers.includes(player.id) && (
+                  <Icon name="check-circle" size={20} color="green" />
+                )}
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text>Nenhum jogador encontrado para este time.</Text>
+          )}
+          {selectedPlayers.length !== 7 && selectedTeamId && (
+            <Text style={styles.error}>Selecione {7 - selectedPlayers.length} jogadores.</Text>
+          )}
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={styles.continueButton}
+        onPress={handleContinue}
+        disabled={selectedTeamId && selectedPlayers.length !== 7}
+      >
         <Text style={styles.continueButtonText}>Continuar</Text>
         <Icon name="arrow-right" size={20} color="white" style={{ marginLeft: 8 }} />
       </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -224,6 +313,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     marginBottom: 8,
+  },
+  playerSelectionContainer: {
+    marginTop: 20,
+    marginBottom: 20,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 5,
+  },
+  playerItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 3,
+    marginBottom: 5,
+    backgroundColor: '#f9f9f9',
+  },
+  selectedPlayerItem: {
+    backgroundColor: '#e0f7fa',
   },
 });
 

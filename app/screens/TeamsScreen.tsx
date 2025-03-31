@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Alert } from 'react-native';
 import { Link } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
-import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Importe os ícones
 
 interface Team {
@@ -21,7 +21,8 @@ const TeamsScreen = () => {
     const fetchTeams = async () => {
       try {
         const teamsCollection = collection(db, 'teams');
-        const teamsSnapshot = await getDocs(teamsCollection);
+        const teamsQuery = query(teamsCollection, orderBy('name', 'asc'));
+        const teamsSnapshot = await getDocs(teamsQuery);
         const teamsList = teamsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
