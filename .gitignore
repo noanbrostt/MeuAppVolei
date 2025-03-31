@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# firebase
+src/config/
+
 # Expo
 .expo/
 dist/
@@ -34,8 +37,5 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
-
-# firebase
-src/config/firebaseConfig.js
 
 app-example
