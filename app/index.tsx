@@ -1,7 +1,7 @@
 // app/index.tsx
 import React from 'react';
-import TeamsScreen from './screens/TeamsScreen';
+import ScoutHistoryScreen from './screens/ScoutHistoryScreen';
 
 export default function Index() {
-  return <TeamsScreen />;
+  return <ScoutHistoryScreen />;
 }
