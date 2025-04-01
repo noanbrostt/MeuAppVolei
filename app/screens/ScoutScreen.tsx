@@ -32,12 +32,10 @@ interface RouteParams {
 }
 
 interface PointLog {
-  timestamp: Date;
   playerId?: string;
+  surname?: string;
   action?: string;
   quality?: number;
-  ourScore: number;
-  opponentScore: number;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -183,12 +181,10 @@ const ScoutScreen = () => {
     isOurPointOverride?: boolean
   ) => {
     const newLogEntry: PointLog = {
-      timestamp: new Date(),
       playerId,
+      surname: selectedPlayerForAction?.surname,
       action,
       quality,
-      ourScore: ourScore,
-      opponentScore: opponentScore,
     };
     setPointLog([...pointLog, newLogEntry]);
 
@@ -214,8 +210,8 @@ const ScoutScreen = () => {
       const lastPoint = pointLog[pointLog.length - 1];
       const newLog = pointLog.slice(0, -1);
       setPointLog(newLog);
-      setOurScore(lastPoint.ourScore);
-      setOpponentScore(lastPoint.opponentScore);
+      // setOurScore(lastPoint.ourScore);
+      // setOpponentScore(lastPoint.opponentScore);
       Alert.alert('Ação Desfeita', 'A última ação foi removida.');
     } else {
       Alert.alert('Atenção', 'Não há ações para desfazer.');
@@ -439,6 +435,32 @@ const ScoutScreen = () => {
             renderItem={renderPlayerItem}
             keyExtractor={(item) => item.id}
           />
+          <View style={styles.scoutLog}>
+            {/* <Text>{JSON.stringify(pointLog, null, 2)}</Text> */}
+            <Text style={styles.logTitle}>Log</Text>
+            <View style={{ flexDirection: 'column-reverse' }}>
+              {pointLog.map((logEntry, index) => {
+                const qualityColor =
+                  logEntry.quality === 0 ? '#FF4D4D' :
+                  logEntry.quality === 1 ? '#FF9900' :
+                  logEntry.quality === 2 ? '#9ACD32' :
+                  logEntry.quality === 3 ? '#4CAF50' :
+                  logEntry.action === 'Erro Nosso' ? '#FF4D4D' :
+                  logEntry.action === 'Erro Adversário' ? '#4CAF50' :
+                  logEntry.action === 'Ponto Nosso' ? '#4CAF50' :
+                  logEntry.action === 'Ponto Adversário' ? '#FF4D4D' :
+                  'black'; // Cor padrão se a qualidade não corresponder
+                const playerName = selectedPlayers.find(p => p.id === logEntry.playerId)?.surname || 'Desconhecido';
+                return (
+                  <Text key={index} style={[styles.logEntryText, { backgroundColor: qualityColor }]}>
+                  {playerName === "Desconhecido"
+                    ? (logEntry.action === "Levantamento" ? "Levant." : logEntry.action === "Ponto Adversário" ? "Ponto Adver." : logEntry.action)
+                    : `${playerName} - ${logEntry.action === "Levantamento" ? "Levant." : logEntry.action === "Ponto Adversário" ? "Ponto Adver." : logEntry.action}`}
+                </Text>
+                );
+              })}
+            </View>
+          </View>
         </View>
 
         <View style={styles.rightContainer}>
@@ -451,11 +473,11 @@ const ScoutScreen = () => {
               {renderActionButton('Saque', 0)}
             </View>
             <View style={styles.column}>
-              <Text style={styles.columnTitle}>Defesa</Text>
-              {renderActionButton('Defesa', 3)}
-              {renderActionButton('Defesa', 2)}
-              {renderActionButton('Defesa', 1)}
-              {renderActionButton('Defesa', 0)}
+              <Text style={styles.columnTitle}>Bloqueio</Text>
+              {renderActionButton('Bloqueio', 3)}
+              {renderActionButton('Bloqueio', 2)}
+              {renderActionButton('Bloqueio', 1)}
+              {renderActionButton('Bloqueio', 0)}
             </View>
             <View style={styles.column}>
               <Text style={styles.columnTitle}>Ataque</Text>
@@ -465,18 +487,18 @@ const ScoutScreen = () => {
               {renderActionButton('Ataque', 0)}
             </View>
             <View style={styles.column}>
-              <Text style={styles.columnTitle}>Bloqueio</Text>
-              {renderActionButton('Bloqueio', 3)}
-              {renderActionButton('Bloqueio', 2)}
-              {renderActionButton('Bloqueio', 1)}
-              {renderActionButton('Bloqueio', 0)}
-            </View>
-            <View style={styles.column}>
               <Text style={styles.columnTitle}>Levant.</Text>
               {renderActionButton('Levantamento', 3)}
               {renderActionButton('Levantamento', 2)}
               {renderActionButton('Levantamento', 1)}
               {renderActionButton('Levantamento', 0)}
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.columnTitle}>Defesa</Text>
+              {renderActionButton('Defesa', 3)}
+              {renderActionButton('Defesa', 2)}
+              {renderActionButton('Defesa', 1)}
+              {renderActionButton('Defesa', 0)}
             </View>
           </ScrollView>
             <View style={styles.scoreButtonsContainer}>
@@ -505,7 +527,6 @@ const ScoutScreen = () => {
 
     {renderSubstitutionModal()}
     {renderMenu()}
-    {/* <Text>{JSON.stringify(pointLog, null, 2)}</Text> Para debug do log de pontos */}
   </View>
 );
 };
@@ -592,11 +613,30 @@ content: {
   paddingTop: 40,
 },
 playerListContainer: {
+  flexDirection: 'row',
   width: '50%',
   padding: 16,
   paddingLeft: 25,
   borderRightWidth: 1,
   borderRightColor: '#ccc',
+},
+scoutLog: {
+  width: '33%',
+  paddingLeft: '3%',
+},
+logTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginBottom: 8,
+  textAlign: 'center',
+},
+logEntryText: {
+  fontSize: 14,
+  fontWeight: 'bold',
+  color: 'white',
+  marginBottom: 4,
+  borderRadius: 5,
+  padding: 5,
 },
 rightContainer: {
   flexDirection: 'column',
@@ -662,10 +702,10 @@ actionButtonText: {
   color: 'white',
   fontWeight: 'bold',
 },
-actionButton3: { backgroundColor: 'green' },
-actionButton2: { backgroundColor: 'lightgreen' },
-actionButton1: { backgroundColor: 'yellow' },
-actionButton0: { backgroundColor: 'red' },
+actionButton3: { backgroundColor: '#4CAF50' },
+actionButton2: { backgroundColor: '#9ACD32' },
+actionButton1: { backgroundColor: '#FF9900' },
+actionButton0: { backgroundColor: '#FF4D4D' },
 selectedActionButton: {
   opacity: 1,
   borderWidth: 2,
