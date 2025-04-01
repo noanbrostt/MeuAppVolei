@@ -25,7 +25,7 @@ interface Team {
 
 interface Player {
   id: string;
-  fullName: string;
+  surname: string;
   number: number;
 }
 
@@ -89,7 +89,7 @@ const ScoutAddScreen = () => {
         id: doc.id,
         ...(doc.data() as Omit<Player, 'id'>),
       })) as Player[];
-      playersList.sort((a, b) => a.fullName.localeCompare(b.fullName));
+      playersList.sort((a, b) => a.surname.localeCompare(b.surname));
       setPlayers(playersList);
     } catch (error: any) {
       setErrorPlayers('Erro ao carregar os jogadores do time.');
@@ -209,7 +209,7 @@ const ScoutAddScreen = () => {
                 ]}
                 onPress={() => handlePlayerSelection(player.id)}
               >
-                <Text>{player.fullName} (#{player.number})</Text>
+                <Text>{player.surname} (#{player.number})</Text>
                 {selectedPlayers.includes(player.id) && (
                   <Icon name="check-circle" size={20} color="green" />
                 )}

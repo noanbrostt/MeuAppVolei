@@ -12,13 +12,14 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import * as ScreenOrientation from 'expo-screen-orientation';
+import * as NavigationBar from 'expo-navigation-bar';
 import { db } from '../../src/config/firebaseConfig';
 import { collection, doc, getDocs, getDoc } from 'firebase/firestore';
-import * as ScreenOrientation from 'expo-screen-orientation';
 
 interface Player {
   id: string;
-  fullName: string;
+  surname: string;
   number: number;
   teamId?: string;
 }
@@ -28,6 +29,15 @@ interface RouteParams {
   scoutName: string;
   scoutDate: string;
   players: string;
+}
+
+interface PointLog {
+  timestamp: Date;
+  playerId?: string;
+  action?: string;
+  quality?: number;
+  ourScore: number;
+  opponentScore: number;
 }
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
@@ -44,17 +54,24 @@ const ScoutScreen = () => {
   const [loadingAllPlayers, setLoadingAllPlayers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [selectionMode, setSelectionMode] = useState<'none' | 'player' | 'action'>('none');
+  const [selectedPlayerForAction, setSelectedPlayerForAction] = useState<Player | null>(null);
+  const [selectedActionForPlayer, setSelectedActionForPlayer] = useState<string | null>(null);
+  const [selectedActionQuality, setSelectedActionQuality] = useState<number | null>(null);
+  const [pointLog, setPointLog] = useState<PointLog[]>([]);
 
   useEffect(() => {
-    async function setOrientation() {
+    async function setOrientationAndImmersive() {
       await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      await NavigationBar.setVisibilityAsync('hidden'); // Oculta a barra de navegação
+      await NavigationBar.setBehaviorAsync('overlay-swipe'); // Opcional: deslizar para mostrar
     }
 
-    setOrientation();
+    setOrientationAndImmersive();
 
-    // Corrected synchronous cleanup function
     return () => {
-      ScreenOrientation.unlockAsync(); // Call the async function directly
+      ScreenOrientation.unlockAsync();
+      NavigationBar.setVisibilityAsync('visible'); // Mostra a barra ao sair
     };
   }, []);
 
@@ -112,19 +129,96 @@ const ScoutScreen = () => {
     setSubstitutionsVisible(true);
   };
 
-  const handleScore = (isOurPoint: boolean) => {
-    if (isOurPoint) {
-      setOurScore(ourScore + 1);
-    } else {
-      setOpponentScore(opponentScore + 1);
+  const handlePlayerClick = (player: Player) => {
+    if (selectionMode === 'none') {
+      setSelectionMode('player');
+      setSelectedPlayerForAction(player);
+    } else if (selectionMode === 'action' && selectedActionForPlayer) {
+      registerPoint(player.id, selectedActionForPlayer, selectedActionQuality, true);
+      resetSelectionMode();
+    } else if (selectionMode === 'player' && selectedPlayerForAction?.id === player.id) {
+      resetSelectionMode();
+    } else if (selectionMode === 'player') {
+      setSelectedPlayerForAction(player);
     }
   };
 
-  const handleActionButtonPress = (value: number) => {
-    if (value === 3) {
-      handleScore(true);
-    } else if (value === 0) {
-      handleScore(false);
+  const handleActionButtonPress = (action: string, value: number) => {
+    if (selectionMode === 'none') {
+      setSelectionMode('action');
+      setSelectedActionForPlayer(action);
+      setSelectedActionQuality(value);
+    } else if (selectionMode === 'player' && selectedPlayerForAction) {
+      let shouldUpdateScore = false;
+      let isOurPoint = false;
+
+      if (value === 3 && (action === 'Ataque' || action === 'Bloqueio' || action === 'Saque')) {
+        shouldUpdateScore = true;
+        isOurPoint = true;
+      } else if (value === 0) {
+        shouldUpdateScore = true;
+        isOurPoint = false; // Ponto para o adversário
+      }
+
+      registerPoint(selectedPlayerForAction.id, action, value, shouldUpdateScore, isOurPoint);
+      resetSelectionMode();
+    } else if (selectionMode === 'action' && selectedActionForPlayer === action && selectedActionQuality === value) {
+      resetSelectionMode();
+    } else if (selectionMode === 'action') {
+      setSelectedActionForPlayer(action);
+      setSelectedActionQuality(value);
+    }
+  };
+
+  const handleScoreButtonClick = (isOurPoint: boolean, action: string) => {
+    registerPoint(undefined, action, undefined, true, isOurPoint);
+    resetSelectionMode();
+  };
+
+  const registerPoint = (
+    playerId?: string,
+    action?: string,
+    quality?: number,
+    shouldUpdateScore: boolean = false,
+    isOurPointOverride?: boolean
+  ) => {
+    const newLogEntry: PointLog = {
+      timestamp: new Date(),
+      playerId,
+      action,
+      quality,
+      ourScore: ourScore,
+      opponentScore: opponentScore,
+    };
+    setPointLog([...pointLog, newLogEntry]);
+
+    if (shouldUpdateScore) {
+      const isOurPoint = isOurPointOverride !== undefined ? isOurPointOverride : (quality === 3);
+      if (isOurPoint) {
+        setOurScore(prevScore => prevScore + 1);
+      } else if (quality === 0 || !isOurPointOverride) {
+        setOpponentScore(prevScore => prevScore + 1);
+      }
+    }
+  };
+
+  const resetSelectionMode = () => {
+    setSelectionMode('none');
+    setSelectedPlayerForAction(null);
+    setSelectedActionForPlayer(null);
+    setSelectedActionQuality(null);
+  };
+
+  const handleUndoLastAction = () => {
+    if (pointLog.length > 0) {
+      const lastPoint = pointLog[pointLog.length - 1];
+      const newLog = pointLog.slice(0, -1);
+      setPointLog(newLog);
+      setOurScore(lastPoint.ourScore);
+      setOpponentScore(lastPoint.opponentScore);
+      Alert.alert('Ação Desfeita', 'A última ação foi removida.');
+    } else {
+      Alert.alert('Atenção', 'Não há ações para desfazer.');
     }
   };
 
@@ -173,30 +267,58 @@ const ScoutScreen = () => {
       'Deseja finalizar o jogo?',
       [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Finalizar', onPress: () => {
+        {
+          text: 'Finalizar',
+          onPress: () => {
             // Adicione aqui a lógica para salvar os dados do jogo, etc.
-            router.push('/screens/HomeScreen'); // Exemplo de navegação para a tela inicial
-          }
+            router.push('/screens/ScoutHistoryScreen'); // Exemplo de navegação para a tela inicial
+          },
         },
       ],
       { cancelable: false }
     );
   };
 
-  const renderPlayerItem = ({ item }: { item: Player }) => (
-    <View style={styles.playerItem}>
-      <Text>{item.fullName} (#{item.number})</Text>
-    </View>
-  );
+  const renderPlayerItem = ({ item }: { item: Player }) => {
+    const isSelected = selectedPlayerForAction?.id === item.id;
+    const shouldBeOpaque = selectionMode === 'none' || isSelected || (selectionMode === 'action' && selectedActionForPlayer);
+    const opacity = shouldBeOpaque ? 1 : 0.5;
 
-  const renderActionButton = (title: string, value: number) => (
-    <TouchableOpacity
-      style={[styles.actionButton, styles[`actionButton${value}`]]}
-      onPress={() => handleActionButtonPress(value)}
-    >
-      <Text style={styles.actionButtonText}>{value}</Text>
-    </TouchableOpacity>
-  );
+    return (
+      <TouchableOpacity
+        style={[
+          styles.playerItem,
+          isSelected && styles.selectedPlayerItem,
+          { opacity: opacity }
+        ]}
+        onPress={() => handlePlayerClick(item)}
+        disabled={selectionMode === 'action' && !selectedActionForPlayer}
+      >
+        <Text>{item.surname} (#{item.number})</Text>
+      </TouchableOpacity>
+    );
+  };
+
+  const renderActionButton = (title: string, value: number) => {
+    const isSelected = selectedActionForPlayer === title && selectedActionQuality === value;
+    const shouldBeOpaque = selectionMode === 'none' || isSelected || (selectionMode === 'player' && selectedPlayerForAction);
+    const opacity = shouldBeOpaque ? 1 : 0.5;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.actionButton,
+          (styles as any)[`actionButton${value}`],
+          isSelected && styles.selectedActionButton,
+          { opacity: opacity }
+        ]}
+        onPress={() => handleActionButtonPress(title, value)}
+        disabled={selectionMode === 'player' && !selectedPlayerForAction}
+      >
+        <Text style={styles.actionButtonText}>{value}</Text>
+      </TouchableOpacity>
+    );
+  };
 
   const renderSubstitutionModal = () => {
     if (!substitutionsVisible) return null;
@@ -217,7 +339,7 @@ const ScoutScreen = () => {
                 ]}
                 onPress={() => handleSelectPlayerToRemove(item.id)}
               >
-                <Text>{item.fullName} (#{item.number})</Text>
+                <Text>{item.surname} (#{item.number})</Text>
               </TouchableOpacity>
             )}
           />
@@ -237,7 +359,7 @@ const ScoutScreen = () => {
                       style={styles.modalPlayerItem}
                       onPress={() => handlePerformSubstitution(item.id)}
                     >
-                      <Text>{item.fullName} (#{item.number})</Text>
+                      <Text>{item.surname} (#{item.number})</Text>
                     </TouchableOpacity>
                   )}
                 />
@@ -292,297 +414,351 @@ const ScoutScreen = () => {
     <View style={styles.container}>
       <StatusBar hidden={true} />
       <View style={styles.topBar}>
-        <TouchableOpacity style={styles.hamburgerButton} onPress={toggleMenu}>
-          <Icon name="bars" size={24} color="white" />
-        </TouchableOpacity>
+        <View style={styles.topBarLeft}>
+          <TouchableOpacity style={styles.topLeftButton} onPress={toggleMenu}>
+            <Icon name="bars" size={24} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.topLeftButton} onPress={handleSubstitution} disabled={loadingAllPlayers}>
+            <Icon name="exchange" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.scoreText}>{ourScore}</Text>
         <Text style={styles.topBarSeparator}>-</Text>
         <Text style={styles.scoreText}>{opponentScore}</Text>
-        <TouchableOpacity style={styles.substitutionButton} onPress={handleSubstitution} disabled={loadingAllPlayers}>
-          <Icon name="exchange" size={20} color="white" />
-          <Text style={styles.substitutionButtonText}>Substituição</Text>
+        <TouchableOpacity style={styles.undoButton} onPress={handleUndoLastAction}>
+          <Icon name="undo" size={20} color="white" />
+          <Text style={styles.undoButtonText}>Desfazer</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.content}>
         <View style={styles.playerListContainer}>
-          <View style={styles.topScoreButtons}>
-            <TouchableOpacity style={styles.scoreButton} onPress={() => handleScore(true)}>
-              <Text style={styles.scoreButtonText}>Ponto Nosso</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.scoreButton} onPress={() => handleScore(false)}>
-              <Text style={styles.scoreButtonText}>Erro Nosso</Text>
-            </TouchableOpacity>
-          </View>
           <FlatList
             data={selectedPlayers}
             renderItem={renderPlayerItem}
             keyExtractor={(item) => item.id}
           />
-          <View style={styles.bottomScoreButtons}>
-            <TouchableOpacity style={styles.scoreButton} onPress={() => handleScore(false)}>
-              <Text style={styles.scoreButtonText}>Ponto Adversário</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.scoreButton} onPress={() => handleScore(true)}>
-              <Text style={styles.scoreButtonText}>Erro Adversário</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
-        <ScrollView horizontal style={styles.actionsContainer}>
-          <View style={styles.column}>
-            <Text style={styles.columnTitle}>Defesa</Text>
-            {renderActionButton('Defesa', 3)}
-            {renderActionButton('Defesa', 2)}
-            {renderActionButton('Defesa', 1)}
-            {renderActionButton('Defesa', 0)}
-          </View>
-          <View style={styles.column}>
-            <Text style={styles.columnTitle}>Ataque</Text>
-            {renderActionButton('Ataque', 3)}
-            {renderActionButton('Ataque', 2)}
-            {renderActionButton('Ataque', 1)}
-            {renderActionButton('Ataque', 0)}
-          </View>
-          <View style={styles.column}>
-            <Text style={styles.columnTitle}>Bloqueio</Text>
-            {renderActionButton('Bloqueio', 3)}
-            {renderActionButton('Bloqueio', 2)}
-            {renderActionButton('Bloqueio', 1)}
-            {renderActionButton('Bloqueio', 0)}
-          </View>
-          <View style={styles.column}>
-            <Text style={styles.columnTitle}>Saque</Text>
-            {renderActionButton('Saque', 3)}
-            {renderActionButton('Saque', 2)}
-            {renderActionButton('Saque', 1)}
-            {renderActionButton('Saque', 0)}
-          </View>
-          <View style={styles.column}>
-            <Text style={styles.columnTitle}>Levantamento</Text>
-            {renderActionButton('Levantamento', 3)}
-            {renderActionButton('Levantamento', 2)}
-            {renderActionButton('Levantamento', 1)}
-            {renderActionButton('Levantamento', 0)}
-          </View>
-        </ScrollView>
-      </View>
-
-      {renderSubstitutionModal()}
-      {renderMenu()}
+        <View style={styles.rightContainer}>
+          <ScrollView horizontal style={styles.actionsContainer}>
+            <View style={styles.column}>
+              <Text style={styles.columnTitle}>Saque</Text>
+              {renderActionButton('Saque', 3)}
+              {renderActionButton('Saque', 2)}
+              {renderActionButton('Saque', 1)}
+              {renderActionButton('Saque', 0)}
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.columnTitle}>Defesa</Text>
+              {renderActionButton('Defesa', 3)}
+              {renderActionButton('Defesa', 2)}
+              {renderActionButton('Defesa', 1)}
+              {renderActionButton('Defesa', 0)}
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.columnTitle}>Ataque</Text>
+              {renderActionButton('Ataque', 3)}
+              {renderActionButton('Ataque', 2)}
+              {renderActionButton('Ataque', 1)}
+              {renderActionButton('Ataque', 0)}
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.columnTitle}>Bloqueio</Text>
+              {renderActionButton('Bloqueio', 3)}
+              {renderActionButton('Bloqueio', 2)}
+              {renderActionButton('Bloqueio', 1)}
+              {renderActionButton('Bloqueio', 0)}
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.columnTitle}>Levant.</Text>
+              {renderActionButton('Levantamento', 3)}
+              {renderActionButton('Levantamento', 2)}
+              {renderActionButton('Levantamento', 1)}
+              {renderActionButton('Levantamento', 0)}
+            </View>
+          </ScrollView>
+            <View style={styles.scoreButtonsContainer}>
+              <View style={styles.scoreButtonsRow}>
+                <TouchableOpacity style={styles.scoreButton} onPress={() => handleScoreButtonClick(true, 'Ponto Nosso')}>
+                  <Text style={styles.scoreButtonText}>Ponto Nosso</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.scoreButton}
+                  onPress={() => handleScoreButtonClick(false, 'Ponto Adversário')}>
+                  <Text style={styles.scoreButtonText}>Ponto Adversário</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.scoreButtonsRow}>
+                <TouchableOpacity style={styles.scoreButton} onPress={() => handleScoreButtonClick(false, 'Erro Nosso')}>
+                  <Text style={styles.scoreButtonText}>Erro Nosso</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.scoreButton}
+                  onPress={() => handleScoreButtonClick(true, 'Erro Adversário')}>
+                  <Text style={styles.scoreButtonText}>Erro Adversário</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+        </View>
     </View>
-  );
+
+
+    {renderSubstitutionModal()}
+    {renderMenu()}
+    {/* <Text>{JSON.stringify(pointLog, null, 2)}</Text> Para debug do log de pontos */}
+  </View>
+);
 };
 
 const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f0f0',
-    flexDirection: 'row',
-  },
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 40,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  hamburgerButton: {
-    padding: 8,
-    marginLeft: 8,
-  },
-  scoreText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  topBarSeparator: {
-    marginHorizontal: 8,
-    fontSize: 16,
-    color: 'white',
-  },
-  substitutionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'blue',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 5,
-    marginRight: 8,
-  },
-  substitutionButtonText: {
-    color: 'white',
-    marginLeft: 5,
-  },
-  content: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingTop: 40,
-  },
-  playerListContainer: {
-    width: '40%',
-    padding: 16,
-    borderRightWidth: 1,
-    borderRightColor: '#ccc',
-  },
-  topScoreButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 10,
-  },
-  bottomScoreButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 10,
-  },
-  scoreButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
-    marginHorizontal: 5,
-  },
-  scoreButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  playerItem: {
-    backgroundColor: 'white',
-    padding: 10,
-    marginBottom: 5,
-    borderRadius: 3,
-  },
-  actionsContainer: {
-    width: '60%',
-  },
-  column: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 8,
-  },
-  columnTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 8
-  },
-  actionButton: {
-    width: 50,
-    height: 30,
-    borderRadius: 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 5,
-    },  
-    actionButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    },
-    actionButton3: { backgroundColor: 'green' },
-    actionButton2: { backgroundColor: 'lightgreen' },
-    actionButton1: { backgroundColor: 'yellow' },
-    actionButton0: { backgroundColor: 'red' },
-    substitutionModal: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    },
-    modalContent: {
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-    },
-    modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    },
-    modalSubtitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 15,
-    marginBottom: 5,
-    },
-    modalPlayerItem: {
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    marginBottom: 5,
-    borderRadius: 3,
-    },
-    modalPlayerItemSelected: {
-    backgroundColor: 'lightblue',
-    },
-    modalCloseButton: {
-    backgroundColor: 'red',
-    padding: 10,
-    borderRadius: 5,
-    marginTop: 20,
-    alignItems: 'center',
-    },
-    modalCloseButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    },
-    error: {
-    color: 'red',
-    fontSize: 12,
-    marginTop: 5,
-    },
-    loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    },
-    errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    },
-    menuContainer: {
-    position: 'absolute',
-    top: 40, // Abaixo da topBar
-    left: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    padding: 10,
-    borderRadius: 5,
-    zIndex: 10,
-    },
-    menuItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    },
-    menuItemText: {
-    color: 'white',
-    fontSize: 16,
-    },
-    menuCloseButton: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    padding: 5,
-    },
+loadingContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+errorContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+container: {
+  flex: 1,
+  backgroundColor: '#f0f0f0',
+  flexDirection: 'row',
+},
+topBar: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  height: 40,
+  backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingHorizontal: 16,
+},
+backButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: 8,
+  marginLeft: 8,
+},
+backButtonText: {
+  color: 'white',
+  marginLeft: 5,
+  fontWeight: 'bold',
+},
+undoButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  padding: 8,
+  marginRight: 8,
+},
+undoButtonText: {
+  color: 'white',
+  marginLeft: 5,
+  fontWeight: 'bold',
+},
+topLeftButton: {
+  padding: 8,
+},
+scoreText: {
+  color: 'white',
+  fontSize: 16,
+  fontWeight: 'bold',
+},
+topBarSeparator: {
+  marginHorizontal: 8,
+  fontSize: 16,
+  color: 'white',
+},
+substitutionButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: 'blue',
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  borderRadius: 5,
+  marginRight: 8,
+},
+topBarLeft: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+content: {
+  flex: 1,
+  flexDirection: 'row',
+  paddingTop: 40,
+},
+playerListContainer: {
+  width: '50%',
+  padding: 16,
+  paddingLeft: 25,
+  borderRightWidth: 1,
+  borderRightColor: '#ccc',
+},
+rightContainer: {
+  flexDirection: 'column',
+},
+topScoreButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  marginBottom: 10,
+},
+bottomScoreButtons: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  marginTop: 10,
+},
+scoreButton: {
+  backgroundColor: '#007bff',
+  paddingVertical: 8, // Aumentei um pouco o padding vertical
+  paddingHorizontal: 20, // Aumentei um pouco o padding horizontal
+  borderRadius: 5,
+  marginHorizontal: 16,
+},
+scoreButtonText: {
+  color: 'white',
+  fontWeight: 'bold',
+  fontSize: 12, // Aumentei um pouco a fonte
+  width: 100,
+  textAlign: 'center', // Centraliza o texto
+},
+playerItem: {
+  backgroundColor: 'white',
+  padding: 10,
+  marginBottom: 5,
+  borderRadius: 3,
+  opacity: 1, // Default opacity
+},
+selectedPlayerItem: {
+  backgroundColor: 'lightblue',
+},
+actionsContainer: {
+  // width: '50%',
+},
+column: {
+  flexDirection: 'column',
+  alignItems: 'center',
+  paddingVertical: 16,
+  paddingHorizontal: 8,
+},
+columnTitle: {
+  fontSize: 12,
+  fontWeight: 'bold',
+  marginBottom: 8,
+},
+actionButton: {
+  width: 65,
+  height: 45,
+  borderRadius: 5,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: 5,
+  opacity: 0.5, // Default opacity
+},
+actionButtonText: {
+  color: 'white',
+  fontWeight: 'bold',
+},
+actionButton3: { backgroundColor: 'green' },
+actionButton2: { backgroundColor: 'lightgreen' },
+actionButton1: { backgroundColor: 'yellow' },
+actionButton0: { backgroundColor: 'red' },
+selectedActionButton: {
+  opacity: 1,
+  borderWidth: 2,
+  borderColor: 'blue',
+},
+substitutionModal: {
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+modalContent: {
+  backgroundColor: 'white',
+  padding: 20,
+  borderRadius: 10,
+  width: '80%',
+},
+modalTitle: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  marginBottom: 10,
+},
+modalSubtitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginTop: 15,
+  marginBottom: 5,
+},
+modalPlayerItem: {
+  backgroundColor: '#f0f0f0',
+  padding: 10,
+  marginBottom: 5,
+  borderRadius: 3,
+},
+modalPlayerItemSelected: {
+  backgroundColor: 'lightblue',
+},
+modalCloseButton: {
+  backgroundColor: 'red',
+  padding: 10,
+  borderRadius: 5,
+  marginTop: 20,
+  alignItems: 'center',
+},
+modalCloseButtonText: {
+  color: 'white',
+  fontWeight: 'bold',
+},
+error: {
+  color: 'red',
+  fontSize: 12,
+  marginTop: 5,
+},
+menuContainer: {
+  position: 'absolute',
+  top: 40, // Abaixo da topBar
+  left: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  padding: 10,
+  borderRadius: 5,
+  zIndex: 10,
+},
+menuItem: {
+  paddingVertical: 10,
+  paddingHorizontal: 15,
+},
+menuItemText: {
+  color: 'white',
+  fontSize: 16,
+},
+menuCloseButton: {
+  position: 'absolute',
+  top: 5,
+  right: 5,
+  padding: 5,
+},
+scoreButtonsContainer: {
+  // width: '60%', // Ocupa a mesma largura das colunas
+  padding: 16,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+scoreButtonsRow: {
+  flexDirection: 'row',
+  // width: '20%',
+  textAlign: 'center',
+  marginBottom: 5, // Adiciona um pouco de espaço entre as linhas de botões
+},
+
 });
 
 export default ScoutScreen;

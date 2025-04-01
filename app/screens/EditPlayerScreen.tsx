@@ -18,6 +18,7 @@ import { Picker } from '@react-native-picker/picker';
 const EditPlayerScreen = () => {
   const { teamId, playerId } = useLocalSearchParams();
   const [fullName, setFullName] = useState('');
+  const [surname, setSurname] = useState('');
   const [number, setNumber] = useState('');
   const [position, setPosition] = useState('');
   const [rg, setRg] = useState('');
@@ -47,6 +48,7 @@ const EditPlayerScreen = () => {
           setError('Jogador não encontrado neste time.');
         } else {
           setFullName(data?.fullName || '');
+          setSurname(data?.surname || '');
           setNumber(String(data?.number) || '');
           setPosition(data?.position || '');
           setRg(data?.rg || '');
@@ -84,9 +86,10 @@ const EditPlayerScreen = () => {
 
     try {
       if (teamId && playerId) {
-        const playerDocRef = doc(db, 'players', playerId);
+        const playerDocRef = doc(db, 'players', playerId as string);
         await updateDoc(playerDocRef, {
           fullName: fullName.trim(),
+          surname: surname !== '' ? surname.trim() : fullName.split(" ")[0],
           number: parsedNumber,
           position: position,
           rg: rg.trim(),
@@ -138,6 +141,14 @@ const EditPlayerScreen = () => {
         placeholder="Nome completo do jogador"
         value={fullName}
         onChangeText={setFullName}
+      />
+
+      <Text style={styles.label}>Apelido (Opcional)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Nome curto para o jogador"
+        value={surname}
+        onChangeText={setSurname}
       />
 
       <Text style={styles.label}>Número*</Text>
