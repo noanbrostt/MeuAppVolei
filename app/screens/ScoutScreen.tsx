@@ -190,7 +190,7 @@ const ScoutScreen = () => {
     setPointLog(prevLog => {
       const updatedLog = [...pointLog, newLogEntry];
       if (scrollViewRef.current) {
-        scrollViewRef.current.scrollTo({ y: 0, animated: true });
+        scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       }
       return updatedLog;
     });
@@ -446,8 +446,14 @@ const ScoutScreen = () => {
             <Text style={styles.logTitle}>Log</Text>
             <ScrollView
               ref={scrollViewRef}
+              // onContentSizeChange={() => {
+              //   // Garante que role para o final na primeira renderização ou quando o conteúdo muda
+              //   if (pointLog.length > 0 && scrollViewRef.current) {
+              //     scrollViewRef.current.scrollToEnd({ animated: false });
+              //   }
+              // }}
             >
-              {pointLog.reverse().map((logEntry, index) => {
+              {[...pointLog].reverse().map((logEntry, index) => {
                 const qualityColor =
                   logEntry.quality === 0 ? '#FF4D4D' :
                   logEntry.quality === 1 ? '#FF9900' :
