@@ -57,6 +57,7 @@ const ScoutScreen = () => {
   const [selectedActionForPlayer, setSelectedActionForPlayer] = useState<string | null>(null);
   const [selectedActionQuality, setSelectedActionQuality] = useState<number | null>(null);
   const [pointLog, setPointLog] = useState<PointLog[]>([]);
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
   useEffect(() => {
     async function setOrientationAndImmersive() {
@@ -186,7 +187,13 @@ const ScoutScreen = () => {
       action,
       quality,
     };
-    setPointLog([...pointLog, newLogEntry]);
+    setPointLog(prevLog => {
+      const updatedLog = [...pointLog, newLogEntry];
+      if (scrollViewRef.current) {
+        scrollViewRef.current.scrollTo({ y: 0, animated: true });
+      }
+      return updatedLog;
+    });
 
     if (shouldUpdateScore) {
       const isOurPoint = isOurPointOverride !== undefined ? isOurPointOverride : (quality === 3);
@@ -436,10 +443,11 @@ const ScoutScreen = () => {
             keyExtractor={(item) => item.id}
           />
           <View style={styles.scoutLog}>
-            {/* <Text>{JSON.stringify(pointLog, null, 2)}</Text> */}
             <Text style={styles.logTitle}>Log</Text>
-            <View style={{ flexDirection: 'column-reverse' }}>
-              {pointLog.map((logEntry, index) => {
+            <ScrollView
+              ref={scrollViewRef}
+            >
+              {pointLog.reverse().map((logEntry, index) => {
                 const qualityColor =
                   logEntry.quality === 0 ? '#FF4D4D' :
                   logEntry.quality === 1 ? '#FF9900' :
@@ -451,6 +459,7 @@ const ScoutScreen = () => {
                   logEntry.action === 'Ponto Adversário' ? '#FF4D4D' :
                   'black'; // Cor padrão se a qualidade não corresponder
                 const playerName = selectedPlayers.find(p => p.id === logEntry.playerId)?.surname || 'Desconhecido';
+
                 return (
                   <Text key={index} style={[styles.logEntryText, { backgroundColor: qualityColor }]}>
                   {playerName === "Desconhecido"
@@ -459,7 +468,7 @@ const ScoutScreen = () => {
                 </Text>
                 );
               })}
-            </View>
+            </ScrollView>
           </View>
         </View>
 
