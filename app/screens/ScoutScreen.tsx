@@ -17,9 +17,12 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { db } from '../../src/config/firebaseConfig';
 import { collection, doc, getDocs, getDoc } from 'firebase/firestore';
 
+type Position = 'Ponteiro' | 'Central' | 'Líbero' | 'Oposto' | 'Levantador';
+
 interface Player {
   id: string;
   surname: string;
+  position: Position;
   number: number;
   teamId?: string;
 }
@@ -58,6 +61,8 @@ const ScoutScreen = () => {
   const [selectedActionQuality, setSelectedActionQuality] = useState<number | null>(null);
   const [pointLog, setPointLog] = useState<PointLog[]>([]);
   const scrollViewRef = React.useRef<ScrollView>(null);
+  const actions = ['Defesa', 'Levantamento', 'Ataque', 'Bloqueio', 'Passe', 'Saque'];
+  const buttonWidth = (screenWidth * 0.5 - 80) / 5; // Calcula a largura dos botões de ação
 
   useEffect(() => {
     async function setOrientationAndImmersive() {
@@ -82,6 +87,7 @@ const ScoutScreen = () => {
         const playersCollection = collection(db, 'players');
         const selectedPlayersData: Player[] = [];
         const initialPlayerIds = playersString.split(',');
+        
         for (const playerId of initialPlayerIds) {
           const playerDoc = await getDoc(doc(playersCollection, playerId));
           if (playerDoc.exists()) {
@@ -90,6 +96,22 @@ const ScoutScreen = () => {
             console.warn(`Jogador com ID ${playerId} não encontrado.`);
           }
         }
+        
+        // Ordenar os atletas na tela de scout pela posição
+        const positionOrder = {
+          'Ponteiro': 1,
+          'Central': 2,
+          'Líbero': 3,
+          'Oposto': 4,
+          'Levantador': 5,
+        };
+        
+        selectedPlayersData.sort((a, b) => {
+          const aOrder = positionOrder[a.position] ?? 999;
+          const bOrder = positionOrder[b.position] ?? 999;
+          return aOrder - bOrder;
+        });
+        
         setSelectedPlayers(selectedPlayersData);
       } catch (error: any) {
         setError('Erro ao carregar os jogadores selecionados.');
@@ -126,6 +148,15 @@ const ScoutScreen = () => {
       setLoadingAllPlayers(false);
     }
     setSubstitutionsVisible(true);
+  };
+
+  const renderActionButtonRow = (action: string) => {
+    return (
+      <View style={styles.actionRow} key={action}>
+        <Text style={[styles.actionRowTitle, {width: buttonWidth}]}>{action === 'Levantamento' ? 'Levant.' : action}</Text>
+        {[3, 2, 1, 0].map(score => renderActionButton(action, score))}
+      </View>
+    );
   };
 
   const handlePlayerClick = (player: Player) => {
@@ -292,7 +323,7 @@ const ScoutScreen = () => {
         style={[
           styles.playerItem,
           isSelected && styles.selectedPlayerItem,
-          { opacity: opacity }
+          { opacity: opacity, height: screenHeight / selectedPlayers.length - 5 }
         ]}
         onPress={() => handlePlayerClick(item)}
         disabled={selectionMode === 'action' && !selectedActionForPlayer}
@@ -313,7 +344,7 @@ const ScoutScreen = () => {
           styles.actionButton,
           (styles as any)[`actionButton${value}`],
           isSelected && styles.selectedActionButton,
-          { opacity: opacity }
+          { opacity: opacity, width: buttonWidth }
         ]}
         onPress={() => handleActionButtonPress(title, value)}
         disabled={selectionMode === 'player' && !selectedPlayerForAction}
@@ -446,12 +477,6 @@ const ScoutScreen = () => {
             <Text style={styles.logTitle}>Log</Text>
             <ScrollView
               ref={scrollViewRef}
-              // onContentSizeChange={() => {
-              //   // Garante que role para o final na primeira renderização ou quando o conteúdo muda
-              //   if (pointLog.length > 0 && scrollViewRef.current) {
-              //     scrollViewRef.current.scrollToEnd({ animated: false });
-              //   }
-              // }}
             >
               {[...pointLog].reverse().map((logEntry, index) => {
                 const qualityColor =
@@ -479,64 +504,30 @@ const ScoutScreen = () => {
         </View>
 
         <View style={styles.rightContainer}>
-          <ScrollView horizontal style={styles.actionsContainer}>
-            <View style={styles.column}>
-              <Text style={styles.columnTitle}>Saque</Text>
-              {renderActionButton('Saque', 3)}
-              {renderActionButton('Saque', 2)}
-              {renderActionButton('Saque', 1)}
-              {renderActionButton('Saque', 0)}
-            </View>
-            <View style={styles.column}>
-              <Text style={styles.columnTitle}>Bloqueio</Text>
-              {renderActionButton('Bloqueio', 3)}
-              {renderActionButton('Bloqueio', 2)}
-              {renderActionButton('Bloqueio', 1)}
-              {renderActionButton('Bloqueio', 0)}
-            </View>
-            <View style={styles.column}>
-              <Text style={styles.columnTitle}>Ataque</Text>
-              {renderActionButton('Ataque', 3)}
-              {renderActionButton('Ataque', 2)}
-              {renderActionButton('Ataque', 1)}
-              {renderActionButton('Ataque', 0)}
-            </View>
-            <View style={styles.column}>
-              <Text style={styles.columnTitle}>Levant.</Text>
-              {renderActionButton('Levantamento', 3)}
-              {renderActionButton('Levantamento', 2)}
-              {renderActionButton('Levantamento', 1)}
-              {renderActionButton('Levantamento', 0)}
-            </View>
-            <View style={styles.column}>
-              <Text style={styles.columnTitle}>Defesa</Text>
-              {renderActionButton('Defesa', 3)}
-              {renderActionButton('Defesa', 2)}
-              {renderActionButton('Defesa', 1)}
-              {renderActionButton('Defesa', 0)}
-            </View>
+          <ScrollView style={styles.actionsContainer}>
+            {actions.map(action => renderActionButtonRow(action))}
           </ScrollView>
-            <View style={styles.scoreButtonsContainer}>
-              <View style={styles.scoreButtonsRow}>
-                <TouchableOpacity style={styles.scoreButton} onPress={() => handleScoreButtonClick(true, 'Ponto Nosso')}>
-                  <Text style={styles.scoreButtonText}>Ponto Nosso</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.scoreButton}
-                  onPress={() => handleScoreButtonClick(false, 'Ponto Adversário')}>
-                  <Text style={styles.scoreButtonText}>Ponto Adversário</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.scoreButtonsRow}>
-                <TouchableOpacity style={styles.scoreButton} onPress={() => handleScoreButtonClick(false, 'Erro Nosso')}>
-                  <Text style={styles.scoreButtonText}>Erro Nosso</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.scoreButton}
-                  onPress={() => handleScoreButtonClick(true, 'Erro Adversário')}>
-                  <Text style={styles.scoreButtonText}>Erro Adversário</Text>
-                </TouchableOpacity>
-              </View>
+
+          <View style={styles.scoreButtonsContainer}>
+            <View style={styles.scoreButtonsRow}>
+              {/* <TouchableOpacity style={styles.scoreButton} onPress={() => handleScoreButtonClick(true, 'Ponto Nosso')}>
+                <Text style={styles.scoreButtonText}>Ponto Nosso</Text>
+              </TouchableOpacity> */}
+              <TouchableOpacity style={styles.scoreButton} onPress={() => handleScoreButtonClick(false, 'Ponto Adversário')}>
+                <Text style={styles.scoreButtonText}>Ponto Adversário</Text>
+              </TouchableOpacity>
+            {/* </View> */}
+            {/* <View style={styles.scoreButtonsRow}> */}
+              {/* <TouchableOpacity style={styles.scoreButton} onPress={() => handleScoreButtonClick(false, 'Erro Nosso')}>
+                <Text style={styles.scoreButtonText}>Erro Nosso</Text>
+              </TouchableOpacity> */}
+              <TouchableOpacity style={styles.scoreButton} onPress={() => handleScoreButtonClick(true, 'Erro Adversário')}>
+                <Text style={styles.scoreButtonText}>Erro Adversário</Text>
+              </TouchableOpacity>
             </View>
+          </View>
         </View>
+
     </View>
 
 
@@ -630,10 +621,11 @@ content: {
 playerListContainer: {
   flexDirection: 'row',
   width: '50%',
-  padding: 16,
-  paddingLeft: 25,
+  padding: 4,
+  paddingLeft: 5,
   borderRightWidth: 1,
   borderRightColor: '#ccc',
+  flex: 1, // Permite que a lista de jogadores preencha o espaço disponível
 },
 scoutLog: {
   width: '33%',
@@ -655,30 +647,7 @@ logEntryText: {
 },
 rightContainer: {
   flexDirection: 'column',
-},
-topScoreButtons: {
-  flexDirection: 'row',
-  justifyContent: 'space-around',
-  marginBottom: 10,
-},
-bottomScoreButtons: {
-  flexDirection: 'row',
-  justifyContent: 'space-around',
-  marginTop: 10,
-},
-scoreButton: {
-  backgroundColor: '#007bff',
-  paddingVertical: 8, // Aumentei um pouco o padding vertical
-  paddingHorizontal: 20, // Aumentei um pouco o padding horizontal
-  borderRadius: 5,
-  marginHorizontal: 16,
-},
-scoreButtonText: {
-  color: 'white',
-  fontWeight: 'bold',
-  fontSize: 12, // Aumentei um pouco a fonte
-  width: 100,
-  textAlign: 'center', // Centraliza o texto
+  width: '50%',
 },
 playerItem: {
   backgroundColor: 'white',
@@ -686,12 +655,10 @@ playerItem: {
   marginBottom: 5,
   borderRadius: 3,
   opacity: 1, // Default opacity
+  justifyContent: 'center', // Centraliza o conteúdo verticalmente
 },
 selectedPlayerItem: {
   backgroundColor: 'lightblue',
-},
-actionsContainer: {
-  // width: '50%',
 },
 column: {
   flexDirection: 'column',
@@ -703,19 +670,6 @@ columnTitle: {
   fontSize: 12,
   fontWeight: 'bold',
   marginBottom: 8,
-},
-actionButton: {
-  width: 65,
-  height: 45,
-  borderRadius: 5,
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginBottom: 5,
-  opacity: 0.5, // Default opacity
-},
-actionButtonText: {
-  color: 'white',
-  fontWeight: 'bold',
 },
 actionButton3: { backgroundColor: '#4CAF50' },
 actionButton2: { backgroundColor: '#9ACD32' },
@@ -802,18 +756,54 @@ menuCloseButton: {
   padding: 5,
 },
 scoreButtonsContainer: {
-  // width: '60%', // Ocupa a mesma largura das colunas
-  padding: 16,
+  padding: 4,
   justifyContent: 'center',
   alignItems: 'center',
+  width: '100%',
 },
 scoreButtonsRow: {
   flexDirection: 'row',
-  // width: '20%',
   textAlign: 'center',
-  marginBottom: 5, // Adiciona um pouco de espaço entre as linhas de botões
 },
-
+scoreButton: {
+  backgroundColor: '#007bff',
+  paddingVertical: 6, // Aumentei um pouco o padding vertical
+  paddingHorizontal: 14, // Aumentei um pouco o padding horizontal
+  borderRadius: 5,
+  marginHorizontal: 6,
+},
+scoreButtonText: {
+  color: 'white',
+  fontWeight: 'bold',
+  fontSize: 12, // Aumentei um pouco a fonte
+  width: 100,
+  textAlign: 'center', // Centraliza o texto
+},
+actionRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingVertical: 4,
+  paddingHorizontal: 16,
+  borderBottomWidth: 1,
+  borderBottomColor: '#ccc',
+},
+actionRowTitle: {
+  fontSize: 12,
+  fontWeight: 'bold',
+  width: 80, // Ajuste a largura conforme necessário
+},
+actionButton: {
+  height: 34, // Ajuste a altura dos botões
+  borderRadius: 5,
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginRight: 8, // Espaçamento entre os botões
+  opacity: 0.5,
+},
+actionButtonText: {
+  color: 'white',
+  fontWeight: 'bold',
+},
 });
 
 export default ScoutScreen;
