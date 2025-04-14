@@ -7,6 +7,7 @@ import {
   StatusBar,
   FlatList,
   ScrollView,
+  SafeAreaView,
   Alert,
   Dimensions,
 } from 'react-native';
@@ -62,9 +63,18 @@ const ScoutScreen = () => {
   const [pointLog, setPointLog] = useState<PointLog[]>([]);
   const scrollViewRef = React.useRef<ScrollView>(null);
   const actions = ['Defesa', 'Levantamento', 'Ataque', 'Bloqueio', 'Passe', 'Saque'];
-  const buttonWidth = (screenHeight * 0.5 - 57) / 5; // Calcula a largura dos botões de ação
-  const buttonHeight = (screenWidth - 130) / 6; // Calcula a altura dos botões de ação
-  const playerHeight = (screenWidth - 78) / 7; // Calcula a altura dos botões de ação
+  let buttonWidth, buttonHeight, playerHeight;
+
+  if (screenHeight > screenWidth) {
+    buttonWidth = (screenHeight * 0.5 - 57) / 5;
+    buttonHeight = (screenWidth - 130) / 6;
+    playerHeight = (screenWidth - 78) / 7;
+  } else {
+    buttonWidth = (screenWidth * 0.5 - 57) / 5;
+    buttonHeight = (screenHeight - 130) / 6;
+    playerHeight = (screenHeight - 78) / 7;
+  }
+
 
   useEffect(() => {
     async function setOrientationAndImmersive() {
@@ -227,6 +237,7 @@ const ScoutScreen = () => {
       action,
       quality,
     };
+    console.log('Novo ponto registrado:', newLogEntry);
     setPointLog(prevLog => {
       const updatedLog = [...pointLog, newLogEntry];
       if (scrollViewRef.current) {
@@ -270,9 +281,13 @@ const ScoutScreen = () => {
   };
 
   const handleSelectPlayerToRemove = (playerId: string) => {
-    setSubstituteOutPlayerId(playerId);
+    if (substituteOutPlayerId === playerId) {
+      setSubstituteOutPlayerId(null); // desmarca se clicar de novo
+    } else {
+      setSubstituteOutPlayerId(playerId); // seleciona novo
+    }
   };
-
+  
   const handlePerformSubstitution = (playerInId: string) => {
     if (!substituteOutPlayerId) {
       Alert.alert('Atenção', 'Selecione um jogador para substituir.');
@@ -378,63 +393,123 @@ const ScoutScreen = () => {
       </TouchableOpacity>
     );
   };
+
+  const getQualityColor = (logEntry) => {
+    if (logEntry.quality === 0) return '#FF4D4D';
+    if (logEntry.quality === 1) return '#FF9900';
+    if (logEntry.quality === 2) return '#9ACD32';
+    if (logEntry.quality === 3) return '#4CAF50';
   
+    switch (logEntry.action) {
+      case 'Erro Nosso':
+      case 'Ponto Adversário':
+        return '#FF4D4D';
+      case 'Erro Adversário':
+      case 'Ponto Nosso':
+        return '#4CAF50';
+      default:
+        return 'black';
+    }
+  };
+  
+  const formatAction = (action) => {
+    const map = {
+      'Levantamento': 'Levant.',
+      'Ponto Adversário': 'Ponto Adver.',
+      'Erro Adversário': 'Erro Adver.',
+    };
+    return map[action] || action;
+  };  
+
   const renderSubstitutionModal = () => {
     if (!substitutionsVisible) return null;
-
+  
+    const selectedPlayerOut = selectedPlayers.find(p => p.id === substituteOutPlayerId);
+    const filteredPlayers = selectedPlayerOut ? [selectedPlayerOut] : selectedPlayers;
+  
     return (
       <View style={styles.substitutionModal}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Substituição</Text>
-          <Text style={styles.modalSubtitle}>Jogador saindo:</Text>
-          <FlatList
-            data={selectedPlayers}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.modalPlayerItem,
-                  substituteOutPlayerId === item.id && styles.modalPlayerItemSelected,
-                ]}
-                onPress={() => handleSelectPlayerToRemove(item.id)}
-              >
-                <Text>{item.surname} (#{item.number})</Text>
-              </TouchableOpacity>
-            )}
-          />
-          {substituteOutPlayerId && (
-            <View>
-              <Text style={styles.modalSubtitle}>Jogador entrando:</Text>
-              {loadingAllPlayers ? (
-                <Text>Carregando suplentes...</Text>
-              ) : error ? (
-                <Text style={styles.error}>{error}</Text>
-              ) : allTeamPlayers.length > 0 ? (
-                <FlatList
-                  data={allTeamPlayers}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      style={styles.modalPlayerItem}
-                      onPress={() => handlePerformSubstitution(item.id)}
-                    >
-                      <Text>{item.surname} (#{item.number})</Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              ) : (
-                <Text>Não há suplentes disponíveis.</Text>
+        <SafeAreaView style={styles.modalContent}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            
+            {/* Sticky Header */}
+            <View style={styles.stickyHeader}>
+              <Text style={styles.modalTitle}>Substituição</Text>
+              <Text style={styles.modalSubtitle}>Jogador saindo:</Text>
+              {selectedPlayerOut && (
+                <TouchableOpacity
+                  style={[styles.modalPlayerItem, styles.modalPlayerItemSelected]}
+                  onPress={() => handleSelectPlayerToRemove(substituteOutPlayerId)} // desfaz seleção
+                >
+                  <Text>{selectedPlayerOut.surname} (#{selectedPlayerOut.number})</Text>
+                </TouchableOpacity>
               )}
             </View>
-          )}
-          <TouchableOpacity style={styles.modalCloseButton} onPress={() => setSubstitutionsVisible(false)}>
-            <Text style={styles.modalCloseButtonText}>Fechar</Text>
-          </TouchableOpacity>
-        </View>
+  
+            {/* Lista de jogadores (caso nenhum selecionado ainda) */}
+            {!selectedPlayerOut && (
+              <FlatList
+                data={filteredPlayers}
+                keyExtractor={(item) => item.id}
+                scrollEnabled={false}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.modalPlayerItem,
+                      substituteOutPlayerId === item.id && styles.modalPlayerItemSelected,
+                    ]}
+                    onPress={() =>
+                      handleSelectPlayerToRemove(
+                        substituteOutPlayerId === item.id ? null : item.id
+                      )
+                    }
+                  >
+                    <Text>{item.surname} (#{item.number})</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+  
+            {/* Se já selecionou alguém pra sair, mostra a lista de suplentes */}
+            {substituteOutPlayerId && (
+              <View>
+                <Text style={styles.modalSubtitle}>Jogador entrando:</Text>
+                {loadingAllPlayers ? (
+                  <Text>Carregando suplentes...</Text>
+                ) : error ? (
+                  <Text style={styles.error}>{error}</Text>
+                ) : allTeamPlayers.length > 0 ? (
+                  <FlatList
+                    data={allTeamPlayers}
+                    keyExtractor={(item) => item.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.modalPlayerItem}
+                        onPress={() => handlePerformSubstitution(item.id)}
+                      >
+                        <Text>{item.surname} (#{item.number})</Text>
+                      </TouchableOpacity>
+                    )}
+                    scrollEnabled={false}
+                  />
+                ) : (
+                  <Text>Não há suplentes disponíveis.</Text>
+                )}
+              </View>
+            )}
+  
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => {setSubstitutionsVisible(false); setSubstituteOutPlayerId(null);}}
+            >
+              <Text style={styles.modalCloseButtonText}>Fechar</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </SafeAreaView>
       </View>
     );
   };
-
+    
   const renderMenu = () => {
     if (!menuVisible) return null;
 
@@ -504,23 +579,21 @@ const ScoutScreen = () => {
               ref={scrollViewRef}
             >
               {[...pointLog].reverse().map((logEntry, index) => {
-                const qualityColor =
-                  logEntry.quality === 0 ? '#FF4D4D' :
-                  logEntry.quality === 1 ? '#FF9900' :
-                  logEntry.quality === 2 ? '#9ACD32' :
-                  logEntry.quality === 3 ? '#4CAF50' :
-                  logEntry.action === 'Erro Nosso' ? '#FF4D4D' :
-                  logEntry.action === 'Erro Adversário' ? '#4CAF50' :
-                  logEntry.action === 'Ponto Nosso' ? '#4CAF50' :
-                  logEntry.action === 'Ponto Adversário' ? '#FF4D4D' :
-                  'black'; // Cor padrão se a qualidade não corresponder
+
+                const qualityColor = getQualityColor(logEntry);
                 const playerName = selectedPlayers.find(p => p.id === logEntry.playerId)?.surname || 'Desconhecido';
 
                 return (
-                  <Text key={index} numberOfLines={2} ellipsizeMode="tail" style={[styles.logEntryText, { backgroundColor: qualityColor }]}>
-                  {playerName === "Desconhecido"
-                    ? (logEntry.action === "Levantamento" ? "Levant." : logEntry.action === "Ponto Adversário" ? "Ponto Adver." : logEntry.action === "Erro Adversário" ? "Erro Adver." : logEntry.action)
-                    : `${playerName} - ${logEntry.action === "Levantamento" ? "Levant." : logEntry.action === "Ponto Adversário" ? "Ponto Adver." : logEntry.action}`}
+                  <Text
+                    key={index} 
+                    numberOfLines={2} 
+                    ellipsizeMode="tail" 
+                    style={[
+                      styles.logEntryText,
+                      { backgroundColor: qualityColor }
+                    ]}
+                  >
+                  {playerName === "Desconhecido" ? "" : `${playerName} - ` + formatAction(logEntry.action)}
                 </Text>
                 );
               })}
@@ -529,9 +602,9 @@ const ScoutScreen = () => {
         </View>
 
         <View style={styles.rightContainer}>
-          <ScrollView style={styles.actionsContainer}>
+          <View>
             {actions.map(action => renderActionButtonRow(action))}
-          </ScrollView>
+          </View>
 
           <View style={styles.scoreButtonsContainer}>
             <View style={styles.scoreButtonsRow}>
@@ -554,7 +627,6 @@ const ScoutScreen = () => {
         </View>
 
     </View>
-
 
     {renderSubstitutionModal()}
     {renderMenu()}
@@ -695,22 +767,6 @@ selectedActionButton: {
   borderWidth: 2,
   borderColor: 'blue',
 },
-substitutionModal: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-modalContent: {
-  backgroundColor: 'white',
-  padding: 20,
-  borderRadius: 10,
-  width: '80%',
-},
 modalTitle: {
   fontSize: 20,
   fontWeight: 'bold',
@@ -819,6 +875,34 @@ actionButtonText: {
   color: 'white',
   fontWeight: 'bold',
 },
+scrollContent: {
+  paddingBottom: 20,
+},
+substitutionModal: {
+  flex: 1,
+  width: '100%',
+  height: '100%',
+  backgroundColor: 'rgba(0,0,0,0.5)',
+  justifyContent: 'center',
+  position: 'absolute',
+},
+modalContent: {
+  backgroundColor: '#fff',
+  margin: 20,
+  borderRadius: 10,
+  padding: 20,
+  width: '70%',
+  maxHeight: '90%', // garante que não ultrapasse a tela
+  alignSelf: 'center',
+},
+stickyHeader: {
+  backgroundColor: 'white', // importante pra não ficar transparente ao rolar
+  position: 'sticky', // iOS só reconhece 'sticky' no web. No RN:
+  top: 0,
+  zIndex: 10,
+  paddingBottom: 10,
+},
+
 });
 
 export default ScoutScreen;
