@@ -149,27 +149,6 @@ const ScoutAddScreen = () => {
         onChangeText={setScoutName}
       />
 
-      <Text style={styles.label}>Time*</Text>
-      <View style={styles.pickerContainer}>
-        <Picker
-          selectedValue={selectedTeamId}
-          style={styles.picker}
-          onValueChange={(itemValue) => setSelectedTeamId(itemValue)}
-        >
-          <Picker.Item label="Selecione um Time" value={null} />
-          {loadingTeams ? (
-            <Picker.Item label="Carregando times..." value={null} />
-          ) : errorTeams ? (
-            <Picker.Item label="Erro ao carregar times" value={null} />
-          ) : (
-            teams.map((team) => (
-              <Picker.Item key={team.id} label={team.name} value={team.id} />
-            ))
-          )}
-        </Picker>
-      </View>
-      {!selectedTeamId && <Text style={styles.error}>Por favor, selecione um time.</Text>}
-
       <Text style={styles.label}>Data</Text>
       <TouchableOpacity style={styles.dateInputContainer} onPress={showDatepicker}>
         <TextInput
@@ -191,6 +170,35 @@ const ScoutAddScreen = () => {
           locale="pt-BR"
         />
       )}
+
+      <Text style={styles.label}>Time*</Text>
+      <View style={styles.pickerContainer}>
+      <Picker
+        selectedValue={selectedTeamId}
+        style={styles.picker}
+        onValueChange={(itemValue) => {
+          if (itemValue !== null) {
+            setSelectedTeamId(itemValue);
+          }
+        }}
+      >
+        {/* Só exibe essa opção se ainda não escolheu nenhum time */}
+        {selectedTeamId === null && (
+          <Picker.Item label="Selecione um Time" value={null} />
+        )}
+
+        {loadingTeams ? (
+          <Picker.Item label="Carregando times..." value={null} />
+        ) : errorTeams ? (
+          <Picker.Item label="Erro ao carregar times" value={null} />
+        ) : (
+          teams.map((team) => (
+            <Picker.Item key={team.id} label={team.name} value={team.id} />
+          ))
+        )}
+      </Picker>
+      </View>
+      {!selectedTeamId && <Text style={styles.error}>Por favor, selecione um time.</Text>}
 
       {selectedTeamId && (
         <View style={styles.playerSelectionContainer}>
@@ -269,14 +277,19 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   pickerContainer: {
-    borderColor: 'gray',
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 8,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: 'white',
+    height: 56,
+    justifyContent: 'center',
   },
   picker: {
-    height: 40,
-  },
+    height: '100%',
+    fontSize: 16,
+    borderRadius: 8,
+    color: '#000',
+  },  
   dateInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -301,7 +314,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    marginTop: 24,
+    marginTop: 12,
+    marginBottom: 24,
   },
   continueButtonText: {
     color: 'white',

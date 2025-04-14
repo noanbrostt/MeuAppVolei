@@ -62,9 +62,9 @@ const ScoutScreen = () => {
   const [pointLog, setPointLog] = useState<PointLog[]>([]);
   const scrollViewRef = React.useRef<ScrollView>(null);
   const actions = ['Defesa', 'Levantamento', 'Ataque', 'Bloqueio', 'Passe', 'Saque'];
-  const buttonWidth = (screenWidth * 0.5 - 57) / 5; // Calcula a largura dos botões de ação
-  const buttonHeight = (screenHeight - 130) / 6; // Calcula a altura dos botões de ação
-  const playerHeight = (screenHeight - 78) / 7; // Calcula a altura dos botões de ação
+  const buttonWidth = (screenHeight * 0.5 - 57) / 5; // Calcula a largura dos botões de ação
+  const buttonHeight = (screenWidth - 130) / 6; // Calcula a altura dos botões de ação
+  const playerHeight = (screenWidth - 78) / 7; // Calcula a altura dos botões de ação
 
   useEffect(() => {
     async function setOrientationAndImmersive() {

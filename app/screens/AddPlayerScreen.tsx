@@ -117,10 +117,15 @@ const AddPlayerScreen = () => {
         <Picker
           selectedValue={position}
           style={styles.picker}
-          onValueChange={(itemValue, itemIndex) =>
-            setPosition(itemValue)
-          }>
-          <Picker.Item label="Selecione a Posição" value="" />
+          onValueChange={(itemValue) => {
+            if (itemValue !== null) {
+              setPosition(itemValue);
+            }
+          }}
+        >
+          {position === '' && (
+            <Picker.Item label="Selecione a Posição" value={null} />
+          )}
           {positions.map((pos) => (
             <Picker.Item key={pos} label={pos} value={pos} />
           ))}
@@ -155,11 +160,16 @@ const AddPlayerScreen = () => {
         numberOfLines={3}
       />
 
-      <Button
-        title={loading ? 'Adicionando...' : 'Adicionar Jogador'}
+      <TouchableOpacity
+        style={[styles.saveButton, loading && styles.disabledButton]}
         onPress={handleAddPlayer}
         disabled={loading}
-      />
+      >
+        <Text style={styles.saveButtonText}>
+          {loading ? 'SalvaAdicionandondo...' : 'Adicionar Jogador'}
+        </Text>
+      </TouchableOpacity>
+
     </ScrollView>
   );
 };
@@ -209,14 +219,36 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   pickerContainer: {
-    borderColor: 'gray',
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 16,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: 'white',
+    height: 56,
+    justifyContent: 'center',
   },
   picker: {
-    height: 40,
+    height: '100%',
+    fontSize: 16,
+    borderRadius: 8,
+    color: '#000',
   },
+  saveButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 12,
+    marginBottom: 24,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#aaa',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  }, 
 });
 
 export default AddPlayerScreen;

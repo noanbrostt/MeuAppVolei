@@ -165,9 +165,15 @@ const EditPlayerScreen = () => {
         <Picker
           selectedValue={position}
           style={styles.picker}
-          onValueChange={(itemValue) => setPosition(itemValue)}
+          onValueChange={(itemValue) => {
+            if (itemValue !== null) {
+              setPosition(itemValue);
+            }
+          }}
         >
-          <Picker.Item label="Selecione a Posição" value="" />
+          {position === '' && (
+            <Picker.Item label="Selecione a Posição" value={null} />
+          )}
           {positions.map((pos) => (
             <Picker.Item key={pos} label={pos} value={pos} />
           ))}
@@ -202,11 +208,16 @@ const EditPlayerScreen = () => {
         numberOfLines={3}
       />
 
-      <Button
-        title={loading ? 'Salvando...' : 'Salvar Alterações'}
+      <TouchableOpacity
+        style={[styles.saveButton, loading && styles.disabledButton]}
         onPress={handleSavePlayer}
         disabled={loading}
-      />
+      >
+        <Text style={styles.saveButtonText}>
+          {loading ? 'Salvando...' : 'Salvar Alterações'}
+        </Text>
+      </TouchableOpacity>
+
     </ScrollView>
   );
 };
@@ -256,14 +267,36 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   pickerContainer: {
-    borderColor: 'gray',
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 16,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    backgroundColor: 'white',
+    height: 56,
+    justifyContent: 'center',
   },
   picker: {
-    height: 40,
+    height: '100%',
+    fontSize: 16,
+    borderRadius: 8,
+    color: '#000',
   },
+  saveButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginTop: 12,
+    marginBottom: 24,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#aaa',
+  },
+  saveButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  }, 
 });
 
 export default EditPlayerScreen;
