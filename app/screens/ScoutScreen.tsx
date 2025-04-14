@@ -62,7 +62,9 @@ const ScoutScreen = () => {
   const [pointLog, setPointLog] = useState<PointLog[]>([]);
   const scrollViewRef = React.useRef<ScrollView>(null);
   const actions = ['Defesa', 'Levantamento', 'Ataque', 'Bloqueio', 'Passe', 'Saque'];
-  const buttonWidth = (screenWidth * 0.5 - 80) / 5; // Calcula a largura dos botões de ação
+  const buttonWidth = (screenWidth * 0.5 - 57) / 5; // Calcula a largura dos botões de ação
+  const buttonHeight = (screenHeight - 130) / 6; // Calcula a altura dos botões de ação
+  const playerHeight = (screenHeight - 78) / 7; // Calcula a altura dos botões de ação
 
   useEffect(() => {
     async function setOrientationAndImmersive() {
@@ -153,8 +155,15 @@ const ScoutScreen = () => {
   const renderActionButtonRow = (action: string) => {
     return (
       <View style={styles.actionRow} key={action}>
-        <Text style={[styles.actionRowTitle, {width: buttonWidth}]}>{action === 'Levantamento' ? 'Levant.' : action}</Text>
-        {[3, 2, 1, 0].map(score => renderActionButton(action, score))}
+        <Text style={[
+          styles.actionRowTitle,
+          {width: buttonWidth, height: buttonHeight}
+        ]}>
+          {action === 'Levantamento' ? 'Levant.' : action}
+        </Text>
+        {[3, 2, 1, 0].map((score, index, arr) =>
+          renderActionButton(action, score, index, arr.length)
+        )}
       </View>
     );
   };
@@ -313,38 +322,54 @@ const ScoutScreen = () => {
     );
   };
 
-  const renderPlayerItem = ({ item }: { item: Player }) => {
+  const renderPlayerItem = ({ item, index }: { item: Player, index: number }) => {
     const isSelected = selectedPlayerForAction?.id === item.id;
     const shouldBeOpaque = selectionMode === 'none' || isSelected || (selectionMode === 'action' && selectedActionForPlayer);
     const opacity = shouldBeOpaque ? 1 : 0.5;
+    const isLastItem = index === selectedPlayers.length - 1;
 
     return (
       <TouchableOpacity
         style={[
           styles.playerItem,
           isSelected && styles.selectedPlayerItem,
-          { opacity: opacity, height: screenHeight / selectedPlayers.length - 5 }
+          { opacity: opacity, height: playerHeight, marginBottom: isLastItem ? 0 : 5 }
         ]}
         onPress={() => handlePlayerClick(item)}
         disabled={selectionMode === 'action' && !selectedActionForPlayer}
       >
-        <Text>{item.surname} (#{item.number})</Text>
+      <Text numberOfLines={1} ellipsizeMode="tail">
+        {item.surname} (#{item.number})
+      </Text>
       </TouchableOpacity>
     );
   };
 
-  const renderActionButton = (title: string, value: number) => {
+  const renderActionButton = (
+    title: string,
+    value: number,
+    index: number,
+    total: number
+  ) => {
     const isSelected = selectedActionForPlayer === title && selectedActionQuality === value;
     const shouldBeOpaque = selectionMode === 'none' || isSelected || (selectionMode === 'player' && selectedPlayerForAction);
     const opacity = shouldBeOpaque ? 1 : 0.5;
-
+  
+    const isLast = index === total - 1;
+  
     return (
       <TouchableOpacity
+        key={value}
         style={[
           styles.actionButton,
           (styles as any)[`actionButton${value}`],
           isSelected && styles.selectedActionButton,
-          { opacity: opacity, width: buttonWidth }
+          {
+            opacity,
+            width: buttonWidth,
+            height: buttonHeight,
+            marginRight: isLast ? 0 : 8,
+          }
         ]}
         onPress={() => handleActionButtonPress(title, value)}
         disabled={selectionMode === 'player' && !selectedPlayerForAction}
@@ -353,7 +378,7 @@ const ScoutScreen = () => {
       </TouchableOpacity>
     );
   };
-
+  
   const renderSubstitutionModal = () => {
     if (!substitutionsVisible) return null;
 
@@ -468,12 +493,12 @@ const ScoutScreen = () => {
 
       <View style={styles.content}>
         <View style={styles.playerListContainer}>
-          <FlatList
-            data={selectedPlayers}
-            renderItem={renderPlayerItem}
-            keyExtractor={(item) => item.id}
-          />
-          <View style={styles.scoutLog}>
+        <FlatList
+          data={selectedPlayers}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => renderPlayerItem({ item, index })}
+        />
+        <View style={styles.scoutLog}>
             <Text style={styles.logTitle}>Log</Text>
             <ScrollView
               ref={scrollViewRef}
@@ -492,9 +517,9 @@ const ScoutScreen = () => {
                 const playerName = selectedPlayers.find(p => p.id === logEntry.playerId)?.surname || 'Desconhecido';
 
                 return (
-                  <Text key={index} style={[styles.logEntryText, { backgroundColor: qualityColor }]}>
+                  <Text key={index} numberOfLines={2} ellipsizeMode="tail" style={[styles.logEntryText, { backgroundColor: qualityColor }]}>
                   {playerName === "Desconhecido"
-                    ? (logEntry.action === "Levantamento" ? "Levant." : logEntry.action === "Ponto Adversário" ? "Ponto Adver." : logEntry.action)
+                    ? (logEntry.action === "Levantamento" ? "Levant." : logEntry.action === "Ponto Adversário" ? "Ponto Adver." : logEntry.action === "Erro Adversário" ? "Erro Adver." : logEntry.action)
                     : `${playerName} - ${logEntry.action === "Levantamento" ? "Levant." : logEntry.action === "Ponto Adversário" ? "Ponto Adver." : logEntry.action}`}
                 </Text>
                 );
@@ -651,7 +676,8 @@ rightContainer: {
 },
 playerItem: {
   backgroundColor: 'white',
-  padding: 10,
+  fontSize: 16,
+  paddingInline: 10,
   marginBottom: 5,
   borderRadius: 3,
   opacity: 1, // Default opacity
@@ -659,17 +685,6 @@ playerItem: {
 },
 selectedPlayerItem: {
   backgroundColor: 'lightblue',
-},
-column: {
-  flexDirection: 'column',
-  alignItems: 'center',
-  paddingVertical: 16,
-  paddingHorizontal: 8,
-},
-columnTitle: {
-  fontSize: 12,
-  fontWeight: 'bold',
-  marginBottom: 8,
 },
 actionButton3: { backgroundColor: '#4CAF50' },
 actionButton2: { backgroundColor: '#9ACD32' },
@@ -791,13 +806,13 @@ actionRowTitle: {
   fontSize: 12,
   fontWeight: 'bold',
   width: 80, // Ajuste a largura conforme necessário
+  display: 'flex',
+  alignItems: 'center',
 },
 actionButton: {
-  height: 34, // Ajuste a altura dos botões
   borderRadius: 5,
   justifyContent: 'center',
   alignItems: 'center',
-  marginRight: 8, // Espaçamento entre os botões
   opacity: 0.5,
 },
 actionButtonText: {
