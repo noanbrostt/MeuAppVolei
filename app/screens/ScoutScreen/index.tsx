@@ -1,14 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   StyleSheet,
   StatusBar,
   Alert,
-  Dimensions,
   TouchableOpacity,
   Text,
 } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import * as NavigationBar from 'expo-navigation-bar';
@@ -35,8 +34,6 @@ interface PointLogType {
   action?: string;
   quality?: number;
 }
-
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const ScoutScreen = () => {
   const {
@@ -69,7 +66,9 @@ const ScoutScreen = () => {
     number | null
   >(null);
   const [pointLog, setPointLog] = useState<PointLogType[]>([]);
-  const scrollViewRef = React.useRef<any>(null); // Usar 'any' para evitar erros de tipo com ref
+  const scrollViewRef = useRef<any>(null); // Usar 'any' para evitar erros de tipo com ref
+  const navigation = useNavigation(); // Hook para acessar a navegação
+  const hasUnsavedData = useRef(false); // Ref para rastrear dados não salvos
   const actions = [
     'Defesa',
     'Levantamento',
@@ -78,6 +77,40 @@ const ScoutScreen = () => {
     'Passe',
     'Saque',
   ];
+
+  useEffect(() => {
+    // Atualiza a flag de dados não salvos sempre que o pointLog mudar
+    if (pointLog.length > 0) {
+      hasUnsavedData.current = true;
+    } else {
+      hasUnsavedData.current = false;
+    }
+  }, [pointLog]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (hasUnsavedData.current) {
+        e.preventDefault(); // Impede a navegação por padrão
+  
+        // Mostra um alerta para o usuário
+        Alert.alert(
+          'Dados Não Salvos',
+          'Você tem dados não salvos. Deseja realmente sair e perder as alterações?',
+          [
+            { text: 'Cancelar', style: 'cancel', onPress: () => {} },
+            {
+              text: 'Sair',
+              style: 'destructive',
+              // Se o usuário confirmar, prossegue com a navegação
+              onPress: () => navigation.dispatch(e.data.action),
+            },
+          ]
+        );
+      }
+    });
+  
+    return unsubscribe; // Remove o listener quando o componente é desmontado
+  }, [navigation]);
 
   useEffect(() => {
     async function setOrientationAndImmersive() {
