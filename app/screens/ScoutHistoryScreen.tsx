@@ -8,13 +8,14 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../../src/config/firebaseConfig';
 
 interface Scout {
   id: string;
-  // Adicione aqui os campos que um scout terá (ex: data, time adversário, etc.)
+  name: string;
   date: string;
-  opponentTeam: string;
-  notes?: string;
+  teamName: string;
 }
 
 const ScoutHistoryScreen = () => {
@@ -23,40 +24,50 @@ const ScoutHistoryScreen = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Aqui você fará a lógica para buscar o histórico de scouts do seu banco de dados
-    // Por enquanto, vamos usar dados de exemplo
-    setTimeout(() => {
-      setScouts([
-        {
-          id: '1',
-          date: '2025-03-30',
-          opponentTeam: 'Time Azul',
-          notes: 'Bom jogo!',
-        },
-        {
-          id: '2',
-          date: '2025-03-28',
-          opponentTeam: 'Time Vermelho',
-          notes: 'Adversário forte.',
-        },
-        { id: '3', date: '2025-03-25', opponentTeam: 'Time Amarelo' },
-      ]);
-      setLoading(false);
-    }, 1000); // Simula um carregamento de 1 segundo
+    const fetchScouts = async () => {
+      try {
+        // 1. Buscar times e montar dicionário
+        const teamsSnapshot = await getDocs(collection(db, 'teams'));
+        const teamsMap: Record<string, string> = {};
+        teamsSnapshot.forEach(doc => {
+          teamsMap[doc.id] = doc.data().name;
+        });
+
+        // 2. Buscar jogos (scouts)
+        const gamesSnapshot = await getDocs(collection(db, 'games'));
+        const scoutData: Scout[] = gamesSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name,
+            date: data.date,
+            teamName: teamsMap[data.teamId] || 'Time desconhecido',
+          };
+        });
+
+        setScouts(scoutData);
+      } catch (err) {
+        console.error('Erro ao buscar scouts:', err);
+        setError('Erro ao carregar os dados');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchScouts();
   }, []);
 
   const renderItem = ({ item }: { item: Scout }) => (
     <TouchableOpacity
       style={styles.scoutItem}
       onPress={() => {
-        // Navegar para a tela de detalhes do scout (ainda não criada)
         router.push(`/screens/ScoutDetailScreen?id=${item.id}`);
       }}
     >
       <View style={styles.scoutInfo}>
+        <Text style={styles.scoutNotes}>Scout: {item.name}</Text>
+        <Text style={styles.scoutTeam}>{item.teamName}</Text>
         <Text style={styles.scoutDate}>{item.date}</Text>
-        <Text style={styles.scoutOpponent}>{item.opponentTeam}</Text>
-        {item.notes && <Text style={styles.scoutNotes}>{item.notes}</Text>}
       </View>
       <Icon name="chevron-right" size={20} color="#888" />
     </TouchableOpacity>
@@ -123,16 +134,16 @@ const styles = StyleSheet.create({
   scoutInfo: {
     flex: 1,
   },
-  scoutDate: {
+  scoutNotes: {
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  scoutOpponent: {
+  scoutTeam: {
     fontSize: 14,
     color: '#333',
   },
-  scoutNotes: {
+  scoutDate: {
     fontSize: 12,
     color: '#777',
     marginTop: 4,
