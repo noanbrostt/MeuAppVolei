@@ -20,6 +20,7 @@ import ActionButtons from './ActionButtons';
 import ScoreButtons from './ScoreButtons';
 import PointLog from './PointLog';
 import SubstitutionModal from './SubstitutionModal';
+import ScoutMenu from './ScoutMenu';
 
 type RouteParams = {
   teamId: string;
@@ -53,7 +54,6 @@ const ScoutScreen = () => {
   const [loadingInitialPlayers, setLoadingInitialPlayers] = useState(true);
   const [loadingAllPlayers, setLoadingAllPlayers] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [menuVisible, setMenuVisible] = useState(false);
   const [selectionMode, setSelectionMode] = useState<
     'none' | 'player' | 'action'
   >('none');
@@ -88,10 +88,10 @@ const ScoutScreen = () => {
   }, [pointLog]);
 
   useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+    const unsubscribe = navigation.addListener('beforeRemove', e => {
       if (hasUnsavedData.current) {
         e.preventDefault(); // Impede a navegação por padrão
-  
+
         // Mostra um alerta para o usuário
         Alert.alert(
           'Dados Não Salvos',
@@ -104,11 +104,11 @@ const ScoutScreen = () => {
               // Se o usuário confirmar, prossegue com a navegação
               onPress: () => navigation.dispatch(e.data.action),
             },
-          ]
+          ],
         );
       }
     });
-  
+
     return unsubscribe; // Remove o listener quando o componente é desmontado
   }, [navigation]);
 
@@ -269,8 +269,12 @@ const ScoutScreen = () => {
     }
   };
 
-  const handleScoreButtonClick = (isOurPoint: boolean, action: string) => {
-    registerPoint(undefined, action, undefined, true, isOurPoint);
+  const handleScoreButtonClick = (
+    isOurPoint: boolean,
+    action: string,
+    quality: number,
+  ) => {
+    registerPoint('generic', action, quality, true, isOurPoint);
     resetSelectionMode();
   };
 
@@ -357,53 +361,6 @@ const ScoutScreen = () => {
     }
   };
 
-  const toggleMenu = () => {
-    setMenuVisible(!menuVisible);
-  };
-
-  const handleNextSet = () => {
-    setOurScore(0);
-    setOpponentScore(0);
-    setMenuVisible(false);
-    Alert.alert('Próximo Set', 'As pontuações do set foram resetadas.');
-  };
-
-  const handleFinalizeGame = () => {
-    setMenuVisible(false);
-    Alert.alert(
-      'Finalizar Jogo',
-      'Deseja finalizar o jogo?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Finalizar',
-          onPress: () => {
-            router.push('/screens/ScoutHistoryScreen');
-          },
-        },
-      ],
-      { cancelable: false },
-    );
-  };
-
-  const renderMenu = () => {
-    if (!menuVisible) return null;
-
-    return (
-      <View style={styles.menuContainer}>
-        <TouchableOpacity style={styles.menuItem} onPress={handleNextSet}>
-          <Text style={styles.menuItemText}>Próximo Set</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuItem} onPress={handleFinalizeGame}>
-          <Text style={styles.menuItemText}>Finalizar Jogo</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.menuCloseButton} onPress={toggleMenu}>
-          <Icon name="times" size={20} color="white" />
-        </TouchableOpacity>
-      </View>
-    );
-  };
-
   if (loadingInitialPlayers) {
     return (
       <View style={styles.loadingContainer}>
@@ -425,9 +382,27 @@ const ScoutScreen = () => {
       <StatusBar hidden={true} />
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
-          <TouchableOpacity style={styles.topLeftButton} onPress={toggleMenu}>
-            <Icon name="bars" size={24} color="white" />
-          </TouchableOpacity>
+          <ScoutMenu
+            ourScore={ourScore} // Passa o placar para o menu
+            opponentScore={opponentScore}
+            pointLog={pointLog} // Passa o log de pontos para o menu
+            teamId={teamId}
+            scoutName={scoutName}
+            scoutDate={scoutDate}
+            onClearPointLog={() => {
+              // Função para limpar o pointLog no ScoutScreen
+              setPointLog([]);
+            }}
+            onResetScores={() => {
+              // Função para resetar os scores no ScoutScreen
+              setOurScore(0);
+              setOpponentScore(0);
+            }}
+            onSetHasUnsavedData={value => {
+              // Função para atualizar a flag de dados não salvos
+              hasUnsavedData.current = value;
+            }}
+          />
           <TouchableOpacity
             style={styles.topLeftButton}
             onPress={handleSubstitution}
@@ -486,8 +461,6 @@ const ScoutScreen = () => {
         loadingAllPlayers={loadingAllPlayers}
         error={error}
       />
-
-      {renderMenu()}
     </View>
   );
 };

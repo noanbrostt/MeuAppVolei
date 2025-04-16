@@ -3,7 +3,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 interface ScoreButtonsProps {
-  onScoreButtonClick: (isOurPoint: boolean, action: string) => void;
+  onScoreButtonClick: (isOurPoint: boolean, action: string, quality: number) => void;
 }
 
 const ScoreButtons: React.FC<ScoreButtonsProps> = ({ onScoreButtonClick }) => (
@@ -11,13 +11,13 @@ const ScoreButtons: React.FC<ScoreButtonsProps> = ({ onScoreButtonClick }) => (
     <View style={styles.scoreButtonsRow}>
       <TouchableOpacity
         style={styles.scoreButton}
-        onPress={() => onScoreButtonClick(false, 'Ponto Adversário')}
+        onPress={() => onScoreButtonClick(false, 'Ponto Adversário', 0)}
       >
         <Text style={styles.scoreButtonText}>Ponto Adversário</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={styles.scoreButton}
-        onPress={() => onScoreButtonClick(true, 'Erro Adversário')}
+        onPress={() => onScoreButtonClick(true, 'Erro Adversário', 3)}
       >
         <Text style={styles.scoreButtonText}>Erro Adversário</Text>
       </TouchableOpacity>
