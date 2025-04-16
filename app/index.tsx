@@ -17,26 +17,25 @@ import TeamsScreen from './screens/TeamsScreen';
 
 export default function Index() {
   return (
-      <View>
-        <TouchableOpacity 
-          style={styles.screenButton}
-          onPress={() => router.replace(`/screens/TeamsScreen`)} 
-        >
-          <Text style={styles.screenText}>TeamsScreen</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-              style={styles.screenButton}
-          onPress={() => router.replace(`/screens/ScoutHistoryScreen`)} 
-        >
-          <Text style={styles.screenText}>ScoutHistoryScreen</Text>
-        </TouchableOpacity>
-      </View>
+    <View>
+      <TouchableOpacity
+        style={styles.screenButton}
+        onPress={() => router.replace(`/screens/TeamsScreen`)}
+      >
+        <Text style={styles.screenText}>TeamsScreen</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.screenButton}
+        onPress={() => router.replace(`/screens/ScoutHistoryScreen`)}
+      >
+        <Text style={styles.screenText}>ScoutHistoryScreen</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
-  
-const styles = StyleSheet.create({
 
+const styles = StyleSheet.create({
   screenButton: {
     backgroundColor: '#007bff',
     padding: 10,

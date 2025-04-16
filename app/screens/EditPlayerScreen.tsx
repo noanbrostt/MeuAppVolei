@@ -89,7 +89,7 @@ const EditPlayerScreen = () => {
         const playerDocRef = doc(db, 'players', playerId as string);
         await updateDoc(playerDocRef, {
           fullName: fullName.trim(),
-          surname: surname !== '' ? surname.trim() : fullName.split(" ")[0],
+          surname: surname !== '' ? surname.trim() : fullName.split(' ')[0],
           number: parsedNumber,
           position: position,
           rg: rg.trim(),
@@ -98,16 +98,26 @@ const EditPlayerScreen = () => {
           teamId: teamId, // Garante que o teamId não seja alterado
         });
         Alert.alert('Sucesso', 'Dados do jogador atualizados com sucesso!', [
-          { text: 'OK', onPress: () => router.replace(`/screens/PlayersScreen?id=${teamId}`) },
+          {
+            text: 'OK',
+            onPress: () =>
+              router.replace(`/screens/PlayersScreen?id=${teamId}`),
+          },
         ]);
       } else {
         setError('ID do time ou do jogador não fornecido.');
-        Alert.alert('Erro', 'Não foi possível identificar o jogador ou o time.');
+        Alert.alert(
+          'Erro',
+          'Não foi possível identificar o jogador ou o time.',
+        );
       }
     } catch (e: any) {
       setError('Erro ao atualizar os dados do jogador.');
       console.error('Erro ao atualizar os dados do jogador:', e);
-      Alert.alert('Erro', `Erro ao atualizar os dados do jogador: ${e.message}`);
+      Alert.alert(
+        'Erro',
+        `Erro ao atualizar os dados do jogador: ${e.message}`,
+      );
     } finally {
       setLoading(false);
     }
@@ -165,7 +175,7 @@ const EditPlayerScreen = () => {
         <Picker
           selectedValue={position}
           style={styles.picker}
-          onValueChange={(itemValue) => {
+          onValueChange={itemValue => {
             if (itemValue !== null) {
               setPosition(itemValue);
             }
@@ -174,7 +184,7 @@ const EditPlayerScreen = () => {
           {position === '' && (
             <Picker.Item label="Selecione a Posição" value={null} />
           )}
-          {positions.map((pos) => (
+          {positions.map(pos => (
             <Picker.Item key={pos} label={pos} value={pos} />
           ))}
         </Picker>
@@ -217,7 +227,6 @@ const EditPlayerScreen = () => {
           {loading ? 'Salvando...' : 'Salvar Alterações'}
         </Text>
       </TouchableOpacity>
-
     </ScrollView>
   );
 };
@@ -296,7 +305,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
-  }, 
+  },
 });
 
 export default EditPlayerScreen;

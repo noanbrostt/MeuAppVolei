@@ -117,7 +117,10 @@ const EditTeamScreen = () => {
         value={teamName}
         onChangeText={text => setTeamName(text)}
       />
-      <TouchableOpacity style={[styles.colorPreview, { backgroundColor: teamColor }]} onPress={toggleColorPicker}>
+      <TouchableOpacity
+        style={[styles.colorPreview, { backgroundColor: teamColor }]}
+        onPress={toggleColorPicker}
+      >
         <Text>Selecionar Cor</Text>
       </TouchableOpacity>
       <TextInput
@@ -132,7 +135,10 @@ const EditTeamScreen = () => {
         disabled={loading || !id}
       />
 
-      <Modal isVisible={isColorPickerVisible} onBackdropPress={toggleColorPicker}>
+      <Modal
+        isVisible={isColorPickerVisible}
+        onBackdropPress={toggleColorPicker}
+      >
         <View style={styles.colorPickerModal}>
           <WheelColorPicker
             color={teamColor}

@@ -52,7 +52,7 @@ const AddPlayerScreen = () => {
         const playersCollection = collection(db, 'players');
         await addDoc(playersCollection, {
           fullName: fullName.trim(),
-          surname: surname !== '' ? surname.trim() : fullName.split(" ")[0],
+          surname: surname !== '' ? surname.trim() : fullName.split(' ')[0],
           number: parsedNumber,
           position: position,
           rg: rg.trim(),
@@ -61,7 +61,11 @@ const AddPlayerScreen = () => {
           teamId: teamId,
         });
         Alert.alert('Sucesso', 'Jogador adicionado com sucesso!', [
-          { text: 'OK', onPress: () => router.replace(`/screens/PlayersScreen?id=${teamId}`) },
+          {
+            text: 'OK',
+            onPress: () =>
+              router.replace(`/screens/PlayersScreen?id=${teamId}`),
+          },
         ]);
         setFullName('');
         setNumber('');
@@ -117,7 +121,7 @@ const AddPlayerScreen = () => {
         <Picker
           selectedValue={position}
           style={styles.picker}
-          onValueChange={(itemValue) => {
+          onValueChange={itemValue => {
             if (itemValue !== null) {
               setPosition(itemValue);
             }
@@ -126,7 +130,7 @@ const AddPlayerScreen = () => {
           {position === '' && (
             <Picker.Item label="Selecione a Posição" value={null} />
           )}
-          {positions.map((pos) => (
+          {positions.map(pos => (
             <Picker.Item key={pos} label={pos} value={pos} />
           ))}
         </Picker>
@@ -169,7 +173,6 @@ const AddPlayerScreen = () => {
           {loading ? 'SalvaAdicionandondo...' : 'Adicionar Jogador'}
         </Text>
       </TouchableOpacity>
-
     </ScrollView>
   );
 };
@@ -248,7 +251,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
-  }, 
+  },
 });
 
 export default AddPlayerScreen;

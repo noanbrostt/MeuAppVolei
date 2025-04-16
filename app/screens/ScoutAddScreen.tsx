@@ -53,8 +53,8 @@ const ScoutAddScreen = () => {
         const teamsQuery = query(teamsCollection, orderBy('name', 'asc'));
         const teamsSnapshot = await getDocs(teamsQuery);
         const teamsList = teamsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
+          id: doc.id,
+          ...doc.data(),
         })) as Team[];
         setTeams(teamsList);
       } catch (error: any) {
@@ -134,7 +134,11 @@ const ScoutAddScreen = () => {
       return;
     }
 
-    router.push(`/screens/ScoutScreen?teamId=${selectedTeamId}&scoutName=${scoutName}&scoutDate=${formattedDate}&players=${selectedPlayers.join(',')}`);
+    router.push(
+      `/screens/ScoutScreen?teamId=${selectedTeamId}&scoutName=${scoutName}&scoutDate=${formattedDate}&players=${selectedPlayers.join(
+        ',',
+      )}`,
+    );
   };
 
   return (
@@ -150,13 +154,21 @@ const ScoutAddScreen = () => {
       />
 
       <Text style={styles.label}>Data</Text>
-      <TouchableOpacity style={styles.dateInputContainer} onPress={showDatepicker}>
+      <TouchableOpacity
+        style={styles.dateInputContainer}
+        onPress={showDatepicker}
+      >
         <TextInput
           style={styles.dateInput}
           value={formattedDate}
           editable={false}
         />
-        <Icon name="calendar" size={20} color="#888" style={styles.calendarIcon} />
+        <Icon
+          name="calendar"
+          size={20}
+          color="#888"
+          style={styles.calendarIcon}
+        />
       </TouchableOpacity>
 
       {showDatePicker && (
@@ -173,32 +185,34 @@ const ScoutAddScreen = () => {
 
       <Text style={styles.label}>Time*</Text>
       <View style={styles.pickerContainer}>
-      <Picker
-        selectedValue={selectedTeamId}
-        style={styles.picker}
-        onValueChange={(itemValue) => {
-          if (itemValue !== null) {
-            setSelectedTeamId(itemValue);
-          }
-        }}
-      >
-        {/* Só exibe essa opção se ainda não escolheu nenhum time */}
-        {selectedTeamId === null && (
-          <Picker.Item label="Selecione um Time" value={null} />
-        )}
+        <Picker
+          selectedValue={selectedTeamId}
+          style={styles.picker}
+          onValueChange={itemValue => {
+            if (itemValue !== null) {
+              setSelectedTeamId(itemValue);
+            }
+          }}
+        >
+          {/* Só exibe essa opção se ainda não escolheu nenhum time */}
+          {selectedTeamId === null && (
+            <Picker.Item label="Selecione um Time" value={null} />
+          )}
 
-        {loadingTeams ? (
-          <Picker.Item label="Carregando times..." value={null} />
-        ) : errorTeams ? (
-          <Picker.Item label="Erro ao carregar times" value={null} />
-        ) : (
-          teams.map((team) => (
-            <Picker.Item key={team.id} label={team.name} value={team.id} />
-          ))
-        )}
-      </Picker>
+          {loadingTeams ? (
+            <Picker.Item label="Carregando times..." value={null} />
+          ) : errorTeams ? (
+            <Picker.Item label="Erro ao carregar times" value={null} />
+          ) : (
+            teams.map(team => (
+              <Picker.Item key={team.id} label={team.name} value={team.id} />
+            ))
+          )}
+        </Picker>
       </View>
-      {!selectedTeamId && <Text style={styles.error}>Por favor, selecione um time.</Text>}
+      {!selectedTeamId && (
+        <Text style={styles.error}>Por favor, selecione um time.</Text>
+      )}
 
       {selectedTeamId && (
         <View style={styles.playerSelectionContainer}>
@@ -208,16 +222,19 @@ const ScoutAddScreen = () => {
           ) : errorPlayers ? (
             <Text style={styles.error}>{errorPlayers}</Text>
           ) : players.length > 0 ? (
-            players.map((player) => (
+            players.map(player => (
               <TouchableOpacity
                 key={player.id}
                 style={[
                   styles.playerItem,
-                  selectedPlayers.includes(player.id) && styles.selectedPlayerItem,
+                  selectedPlayers.includes(player.id) &&
+                    styles.selectedPlayerItem,
                 ]}
                 onPress={() => handlePlayerSelection(player.id)}
               >
-                <Text>{player.surname} (#{player.number})</Text>
+                <Text>
+                  {player.surname} (#{player.number})
+                </Text>
                 {selectedPlayers.includes(player.id) && (
                   <Icon name="check-circle" size={20} color="green" />
                 )}
@@ -227,7 +244,9 @@ const ScoutAddScreen = () => {
             <Text>Nenhum jogador encontrado para este time.</Text>
           )}
           {selectedPlayers.length !== 7 && selectedTeamId && (
-            <Text style={styles.error}>Selecione {7 - selectedPlayers.length} jogadores.</Text>
+            <Text style={styles.error}>
+              Selecione {7 - selectedPlayers.length} jogadores.
+            </Text>
           )}
         </View>
       )}
@@ -238,7 +257,12 @@ const ScoutAddScreen = () => {
         disabled={selectedTeamId && selectedPlayers.length !== 7}
       >
         <Text style={styles.continueButtonText}>Continuar</Text>
-        <Icon name="arrow-right" size={20} color="white" style={{ marginLeft: 8 }} />
+        <Icon
+          name="arrow-right"
+          size={20}
+          color="white"
+          style={{ marginLeft: 8 }}
+        />
       </TouchableOpacity>
     </ScrollView>
   );
@@ -289,7 +313,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderRadius: 8,
     color: '#000',
-  },  
+  },
   dateInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, StatusBar, Alert, Dimensions, TouchableOpacity, Text } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  StatusBar,
+  Alert,
+  Dimensions,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -31,28 +39,51 @@ interface PointLogType {
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const ScoutScreen = () => {
-  const { teamId, scoutName, scoutDate, players: playersString } = useLocalSearchParams<RouteParams>();
+  const {
+    teamId,
+    scoutName,
+    scoutDate,
+    players: playersString,
+  } = useLocalSearchParams<RouteParams>();
   const [selectedPlayers, setSelectedPlayers] = useState<Player[]>([]);
   const [ourScore, setOurScore] = useState(0);
   const [opponentScore, setOpponentScore] = useState(0);
   const [substitutionsVisible, setSubstitutionsVisible] = useState(false);
   const [allTeamPlayers, setAllTeamPlayers] = useState<Player[]>([]);
-  const [substituteOutPlayerId, setSubstituteOutPlayerId] = useState<string | null>(null);
+  const [substituteOutPlayerId, setSubstituteOutPlayerId] = useState<
+    string | null
+  >(null);
   const [loadingInitialPlayers, setLoadingInitialPlayers] = useState(true);
   const [loadingAllPlayers, setLoadingAllPlayers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [selectionMode, setSelectionMode] = useState<'none' | 'player' | 'action'>('none');
-  const [selectedPlayerForAction, setSelectedPlayerForAction] = useState<Player | null>(null);
-  const [selectedActionForPlayer, setSelectedActionForPlayer] = useState<string | null>(null);
-  const [selectedActionQuality, setSelectedActionQuality] = useState<number | null>(null);
+  const [selectionMode, setSelectionMode] = useState<
+    'none' | 'player' | 'action'
+  >('none');
+  const [selectedPlayerForAction, setSelectedPlayerForAction] =
+    useState<Player | null>(null);
+  const [selectedActionForPlayer, setSelectedActionForPlayer] = useState<
+    string | null
+  >(null);
+  const [selectedActionQuality, setSelectedActionQuality] = useState<
+    number | null
+  >(null);
   const [pointLog, setPointLog] = useState<PointLogType[]>([]);
   const scrollViewRef = React.useRef<any>(null); // Usar 'any' para evitar erros de tipo com ref
-  const actions = ['Defesa', 'Levantamento', 'Ataque', 'Bloqueio', 'Passe', 'Saque'];
+  const actions = [
+    'Defesa',
+    'Levantamento',
+    'Ataque',
+    'Bloqueio',
+    'Passe',
+    'Saque',
+  ];
 
   useEffect(() => {
     async function setOrientationAndImmersive() {
-      await ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+      await ScreenOrientation.lockAsync(
+        ScreenOrientation.OrientationLock.LANDSCAPE,
+      );
       await NavigationBar.setVisibilityAsync('hidden');
       await NavigationBar.setBehaviorAsync('overlay-swipe');
     }
@@ -77,18 +108,21 @@ const ScoutScreen = () => {
         for (const playerId of initialPlayerIds) {
           const playerDoc = await getDoc(doc(playersCollection, playerId));
           if (playerDoc.exists()) {
-            selectedPlayersData.push({ id: playerDoc.id, ...(playerDoc.data() as Omit<Player, 'id'>) });
+            selectedPlayersData.push({
+              id: playerDoc.id,
+              ...(playerDoc.data() as Omit<Player, 'id'>),
+            });
           } else {
             console.warn(`Jogador com ID ${playerId} não encontrado.`);
           }
         }
 
         const positionOrder = {
-          'Ponteiro': 1,
-          'Central': 2,
-          'Líbero': 3,
-          'Oposto': 4,
-          'Levantador': 5,
+          Ponteiro: 1,
+          Central: 2,
+          Líbero: 3,
+          Oposto: 4,
+          Levantador: 5,
         };
 
         selectedPlayersData.sort((a, b) => {
@@ -118,17 +152,22 @@ const ScoutScreen = () => {
       const playersCollection = collection(db, 'players');
       const querySnapshot = await getDocs(collection(db, 'players'));
       const allPlayersData: Player[] = [];
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const playerData = doc.data() as Player;
         if (playerData.teamId === teamId) {
           allPlayersData.push({ id: doc.id, ...playerData });
         }
       });
-      setAllTeamPlayers(allPlayersData.filter(p => !selectedPlayers.some(sp => sp.id === p.id)));
+      setAllTeamPlayers(
+        allPlayersData.filter(p => !selectedPlayers.some(sp => sp.id === p.id)),
+      );
     } catch (error: any) {
       setError('Erro ao carregar os jogadores do time para substituição.');
       console.error('Erro ao carregar jogadores do time:', error);
-      Alert.alert('Erro', 'Erro ao carregar os jogadores do time para substituição.');
+      Alert.alert(
+        'Erro',
+        'Erro ao carregar os jogadores do time para substituição.',
+      );
     } finally {
       setLoadingAllPlayers(false);
     }
@@ -140,9 +179,17 @@ const ScoutScreen = () => {
       setSelectionMode('player');
       setSelectedPlayerForAction(player);
     } else if (selectionMode === 'action' && selectedActionForPlayer) {
-      registerPoint(player.id, selectedActionForPlayer, selectedActionQuality, true);
+      registerPoint(
+        player.id,
+        selectedActionForPlayer,
+        selectedActionQuality,
+        true,
+      );
       resetSelectionMode();
-    } else if (selectionMode === 'player' && selectedPlayerForAction?.id === player.id) {
+    } else if (
+      selectionMode === 'player' &&
+      selectedPlayerForAction?.id === player.id
+    ) {
       resetSelectionMode();
     } else if (selectionMode === 'player') {
       setSelectedPlayerForAction(player);
@@ -158,7 +205,10 @@ const ScoutScreen = () => {
       let shouldUpdateScore = false;
       let isOurPoint = false;
 
-      if (value === 3 && (action === 'Ataque' || action === 'Bloqueio' || action === 'Saque')) {
+      if (
+        value === 3 &&
+        (action === 'Ataque' || action === 'Bloqueio' || action === 'Saque')
+      ) {
         shouldUpdateScore = true;
         isOurPoint = true;
       } else if (value === 0) {
@@ -166,9 +216,19 @@ const ScoutScreen = () => {
         isOurPoint = false;
       }
 
-      registerPoint(selectedPlayerForAction.id, action, value, shouldUpdateScore, isOurPoint);
+      registerPoint(
+        selectedPlayerForAction.id,
+        action,
+        value,
+        shouldUpdateScore,
+        isOurPoint,
+      );
       resetSelectionMode();
-    } else if (selectionMode === 'action' && selectedActionForPlayer === action && selectedActionQuality === value) {
+    } else if (
+      selectionMode === 'action' &&
+      selectedActionForPlayer === action &&
+      selectedActionQuality === value
+    ) {
       resetSelectionMode();
     } else if (selectionMode === 'action') {
       setSelectedActionForPlayer(action);
@@ -186,7 +246,7 @@ const ScoutScreen = () => {
     action?: string,
     quality?: number,
     shouldUpdateScore: boolean = false,
-    isOurPointOverride?: boolean
+    isOurPointOverride?: boolean,
   ) => {
     const newLogEntry: PointLogType = {
       playerId,
@@ -204,7 +264,8 @@ const ScoutScreen = () => {
     });
 
     if (shouldUpdateScore) {
-      const isOurPoint = isOurPointOverride !== undefined ? isOurPointOverride : (quality === 3);
+      const isOurPoint =
+        isOurPointOverride !== undefined ? isOurPointOverride : quality === 3;
       if (isOurPoint) {
         setOurScore(prevScore => prevScore + 1);
       } else if (quality === 0 || !isOurPointOverride) {
@@ -249,7 +310,9 @@ const ScoutScreen = () => {
       return;
     }
 
-    const playerOutIndex = selectedPlayers.findIndex(p => p.id === substituteOutPlayerId);
+    const playerOutIndex = selectedPlayers.findIndex(
+      p => p.id === substituteOutPlayerId,
+    );
     const playerIn = allTeamPlayers.find(p => p.id === playerInId);
 
     if (playerOutIndex !== -1 && playerIn) {
@@ -286,7 +349,7 @@ const ScoutScreen = () => {
           },
         },
       ],
-      { cancelable: false }
+      { cancelable: false },
     );
   };
 
@@ -332,7 +395,11 @@ const ScoutScreen = () => {
           <TouchableOpacity style={styles.topLeftButton} onPress={toggleMenu}>
             <Icon name="bars" size={24} color="white" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.topLeftButton} onPress={handleSubstitution} disabled={loadingAllPlayers}>
+          <TouchableOpacity
+            style={styles.topLeftButton}
+            onPress={handleSubstitution}
+            disabled={loadingAllPlayers}
+          >
             <Icon name="exchange" size={20} color="white" />
           </TouchableOpacity>
         </View>
@@ -340,7 +407,10 @@ const ScoutScreen = () => {
         <Text style={styles.scoreText}>{ourScore}</Text>
         <Text style={styles.topBarSeparator}>-</Text>
         <Text style={styles.scoreText}>{opponentScore}</Text>
-        <TouchableOpacity style={styles.undoButton} onPress={handleUndoLastAction}>
+        <TouchableOpacity
+          style={styles.undoButton}
+          onPress={handleUndoLastAction}
+        >
           <Icon name="undo" size={20} color="white" />
           <Text style={styles.undoButtonText}>Desfazer</Text>
         </TouchableOpacity>

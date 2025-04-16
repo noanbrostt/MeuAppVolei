@@ -1,6 +1,12 @@
 // ScoutScreen/ActionButtons.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 
 interface ActionButtonsProps {
   actions: string[];
@@ -20,8 +26,18 @@ if (screenHeight > screenWidth) {
   buttonHeight = (screenHeight - 130) / 6;
 }
 
-const ActionButtons: React.FC<ActionButtonsProps> = ({ actions, selectedAction, selectedQuality, onActionButtonPress }) => {
-  const renderActionButton = (title: string, value: number, index: number, total: number) => {
+const ActionButtons: React.FC<ActionButtonsProps> = ({
+  actions,
+  selectedAction,
+  selectedQuality,
+  onActionButtonPress,
+}) => {
+  const renderActionButton = (
+    title: string,
+    value: number,
+    index: number,
+    total: number,
+  ) => {
     const isSelected = selectedAction === title && selectedQuality === value;
     const opacity = !selectedAction || isSelected ? 1 : 0.5;
     const isLast = index === total - 1;
@@ -29,7 +45,17 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ actions, selectedAction, 
     return (
       <TouchableOpacity
         key={value}
-        style={[styles.actionButton, (styles as any)[`actionButton${value}`], isSelected && styles.selectedActionButton, { opacity, width: buttonWidth, height: buttonHeight, marginRight: isLast ? 0 : 8 }]}
+        style={[
+          styles.actionButton,
+          (styles as any)[`actionButton${value}`],
+          isSelected && styles.selectedActionButton,
+          {
+            opacity,
+            width: buttonWidth,
+            height: buttonHeight,
+            marginRight: isLast ? 0 : 8,
+          },
+        ]}
         onPress={() => onActionButtonPress(title, value)}
       >
         <Text style={styles.actionButtonText}>{value}</Text>
@@ -39,10 +65,17 @@ const ActionButtons: React.FC<ActionButtonsProps> = ({ actions, selectedAction, 
 
   const renderActionButtonRow = (action: string) => (
     <View style={styles.actionRow} key={action}>
-      <Text style={[styles.actionRowTitle, { width: buttonWidth, height: buttonHeight }]}>
+      <Text
+        style={[
+          styles.actionRowTitle,
+          { width: buttonWidth, height: buttonHeight },
+        ]}
+      >
         {action === 'Levantamento' ? 'Levant.' : action}
       </Text>
-      {[3, 2, 1, 0].map((score, index, arr) => renderActionButton(action, score, index, arr.length))}
+      {[3, 2, 1, 0].map((score, index, arr) =>
+        renderActionButton(action, score, index, arr.length),
+      )}
     </View>
   );
 

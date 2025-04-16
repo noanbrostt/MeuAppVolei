@@ -1,0 +1,20 @@
+Ao apagar um time, os jogadores desse time não estão sendo apagados juntos
+
+Colocar a lista de times e atletas em order alfabética
+
+Ao retirar a última ação, o placar não volta
+
+
+.prettierrc
+{
+  "semi": true,                 // Usa ponto e vírgula no final das linhas
+  "singleQuote": true,          // Usa aspas simples
+  "trailingComma": "all",       // Adiciona vírgula no final de objetos/arrays multi-linha
+  "printWidth": 80,             // Limite máximo de caracteres por linha
+  "tabWidth": 2,                // Tamanho do tab (número de espaços)
+  "useTabs": false,             // Usa espaços em vez de tabs
+  "bracketSpacing": true,       // Espaço entre chaves: { foo: bar }
+  "arrowParens": "avoid",       // Remove parênteses quando possível: x => x
+  "jsxSingleQuote": false,      // Usa aspas duplas em JSX
+  "endOfLine": "auto"           // Garante compatibilidade cross-plataforma (Windows/Linux/Mac)
+}

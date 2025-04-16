@@ -1,8 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  Alert,
+} from 'react-native';
 import { Link } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
-import { collection, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+} from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome'; // Importe os ícones
 
 interface Team {
@@ -68,7 +83,7 @@ const TeamsScreen = () => {
           },
         },
       ],
-      { cancelable: false }
+      { cancelable: false },
     );
   };
 
@@ -84,19 +99,35 @@ const TeamsScreen = () => {
           <Text style={styles.teamName}>{item.name}</Text>
         </TouchableOpacity>
       </Link>
-      <TouchableOpacity style={styles.optionsButton} onPress={() => toggleDropdown(item.id)}>
+      <TouchableOpacity
+        style={styles.optionsButton}
+        onPress={() => toggleDropdown(item.id)}
+      >
         <Text style={styles.optionsDots}>...</Text>
       </TouchableOpacity>
       {selectedTeamId === item.id && (
         <View style={styles.dropdown}>
           <Link href={`/screens/EditTeamScreen?id=${item.id}`} asChild>
             <TouchableOpacity style={styles.dropdownItem}>
-              <Icon name="pencil" size={16} color="black" style={styles.dropdownIcon} />
+              <Icon
+                name="pencil"
+                size={16}
+                color="black"
+                style={styles.dropdownIcon}
+              />
               <Text>Editar</Text>
             </TouchableOpacity>
           </Link>
-          <TouchableOpacity style={styles.dropdownItem} onPress={() => handleDeleteTeam(item.id)}>
-            <Icon name="trash" size={16} color="red" style={styles.dropdownIcon} />
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => handleDeleteTeam(item.id)}
+          >
+            <Icon
+              name="trash"
+              size={16}
+              color="red"
+              style={styles.dropdownIcon}
+            />
             <Text style={{ color: 'red' }}>Excluir</Text>
           </TouchableOpacity>
         </View>
@@ -173,9 +204,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#888',
-    marginTop: -12
+    marginTop: -12,
   },
-dropdown: {
+  dropdown: {
     position: 'absolute',
     display: 'flex',
     flexDirection: 'row',

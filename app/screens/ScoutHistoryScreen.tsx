@@ -27,8 +27,18 @@ const ScoutHistoryScreen = () => {
     // Por enquanto, vamos usar dados de exemplo
     setTimeout(() => {
       setScouts([
-        { id: '1', date: '2025-03-30', opponentTeam: 'Time Azul', notes: 'Bom jogo!' },
-        { id: '2', date: '2025-03-28', opponentTeam: 'Time Vermelho', notes: 'Adversário forte.' },
+        {
+          id: '1',
+          date: '2025-03-30',
+          opponentTeam: 'Time Azul',
+          notes: 'Bom jogo!',
+        },
+        {
+          id: '2',
+          date: '2025-03-28',
+          opponentTeam: 'Time Vermelho',
+          notes: 'Adversário forte.',
+        },
         { id: '3', date: '2025-03-25', opponentTeam: 'Time Amarelo' },
       ]);
       setLoading(false);
@@ -77,7 +87,7 @@ const ScoutHistoryScreen = () => {
         <FlatList
           data={scouts}
           renderItem={renderItem}
-          keyExtractor={(item) => item.id}
+          keyExtractor={item => item.id}
         />
       )}
       <TouchableOpacity

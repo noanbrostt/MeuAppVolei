@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   TouchableWithoutFeedback,
-  Alert
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams, Link } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
@@ -18,7 +18,7 @@ import {
   query,
   where,
   onSnapshot,
-  orderBy
+  orderBy,
 } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
 
@@ -40,30 +40,35 @@ const PlayersScreen = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<number | null>(null);
-  const optionsButtonRef = useRef<React.ElementRef<typeof TouchableOpacity>>(null);
+  const optionsButtonRef =
+    useRef<React.ElementRef<typeof TouchableOpacity>>(null);
 
   useEffect(() => {
     const fetchPlayers = async () => {
       if (!teamId) {
-        setError("ID do time não fornecido.");
+        setError('ID do time não fornecido.');
         setLoading(false);
         return;
       }
 
       try {
-        const playersRef = collection(db, "players"); // Nome da coleção
-        const q = query(playersRef, where("teamId", "==", teamId), orderBy("fullName", "asc")); // Filtra os jogadores do time
+        const playersRef = collection(db, 'players'); // Nome da coleção
+        const q = query(
+          playersRef,
+          where('teamId', '==', teamId),
+          orderBy('fullName', 'asc'),
+        ); // Filtra os jogadores do time
 
         const querySnapshot = await getDocs(q);
-        const playersData = querySnapshot.docs.map((doc) => ({
+        const playersData = querySnapshot.docs.map(doc => ({
           id: doc.id, // ID do documento
           ...doc.data(), // Dados do jogador
         })) as Player[];
 
         setPlayers(playersData);
       } catch (e) {
-        setError("Erro ao carregar os jogadores.");
-        console.error("Erro ao carregar os jogadores:", e);
+        setError('Erro ao carregar os jogadores.');
+        console.error('Erro ao carregar os jogadores:', e);
       } finally {
         setLoading(false);
       }
@@ -89,19 +94,24 @@ const PlayersScreen = () => {
               setLoading(true);
               const playerDocRef = doc(db, 'players', playerId);
               await deleteDoc(playerDocRef);
-              const updatedPlayers = players.filter(player => player.id !== playerId);
+              const updatedPlayers = players.filter(
+                player => player.id !== playerId,
+              );
               setPlayers(updatedPlayers);
               setLoading(false);
             } catch (error: any) {
               setError('Erro ao excluir o jogador.');
               console.error('Erro ao excluir o jogador:', error);
               setLoading(false);
-              Alert.alert('Erro', 'Erro ao excluir o jogador: ' + error.message);
+              Alert.alert(
+                'Erro',
+                'Erro ao excluir o jogador: ' + error.message,
+              );
             }
           },
         },
       ],
-      { cancelable: false }
+      { cancelable: false },
     );
   };
 
@@ -111,30 +121,52 @@ const PlayersScreen = () => {
 
   const renderItem = ({ item }: { item: Player }) => (
     <View style={styles.playerItemContainer}>
-        <Link href={`/screens/EditPlayerScreen?playerId=${item.id}&teamId=${teamId}`} asChild>
-            <TouchableOpacity style={styles.playerItem}>
-            <Text style={styles.playerNumber}>{item.number}</Text>
-            <Text style={styles.playerName}>{item.fullName}</Text>
+      <Link
+        href={`/screens/EditPlayerScreen?playerId=${item.id}&teamId=${teamId}`}
+        asChild
+      >
+        <TouchableOpacity style={styles.playerItem}>
+          <Text style={styles.playerNumber}>{item.number}</Text>
+          <Text style={styles.playerName}>{item.fullName}</Text>
         </TouchableOpacity>
       </Link>
-      <TouchableOpacity style={styles.optionsButton} onPress={() => toggleDropdown(item.id)}>
+      <TouchableOpacity
+        style={styles.optionsButton}
+        onPress={() => toggleDropdown(item.id)}
+      >
         <Text style={styles.optionsDots}>...</Text>
       </TouchableOpacity>
 
-        {selectedPlayerId === item.id && (
-            <View style={styles.dropdown}>
-                <Link href={`/screens/EditPlayerScreen?playerId=${item.id}&teamId=${teamId}`} asChild>
-                <TouchableOpacity style={styles.dropdownItem}>
-                    <Icon name="pencil" size={16} color="black" style={styles.dropdownIcon} />
-                    <Text>Editar</Text>
-                </TouchableOpacity>
-                </Link>
-                <TouchableOpacity style={styles.dropdownItem} onPress={() => handleDeletePlayer(item.id)}>
-                    <Icon name="trash" size={16} color="red" style={styles.dropdownIcon} />
-                    <Text style={{ color: 'red' }}>Excluir</Text>
-                </TouchableOpacity>
-            </View>
-        )}
+      {selectedPlayerId === item.id && (
+        <View style={styles.dropdown}>
+          <Link
+            href={`/screens/EditPlayerScreen?playerId=${item.id}&teamId=${teamId}`}
+            asChild
+          >
+            <TouchableOpacity style={styles.dropdownItem}>
+              <Icon
+                name="pencil"
+                size={16}
+                color="black"
+                style={styles.dropdownIcon}
+              />
+              <Text>Editar</Text>
+            </TouchableOpacity>
+          </Link>
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => handleDeletePlayer(item.id)}
+          >
+            <Icon
+              name="trash"
+              size={16}
+              color="red"
+              style={styles.dropdownIcon}
+            />
+            <Text style={{ color: 'red' }}>Excluir</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 
@@ -156,9 +188,9 @@ const PlayersScreen = () => {
           keyExtractor={item => item.id}
         />
         <Link href={`/screens/AddPlayerScreen?teamId=${teamId}`} asChild>
-            <TouchableOpacity style={styles.addButton}>
-                <Text style={styles.addButtonText}>+</Text>
-            </TouchableOpacity>
+          <TouchableOpacity style={styles.addButton}>
+            <Text style={styles.addButtonText}>+</Text>
+          </TouchableOpacity>
         </Link>
       </View>
     </TouchableWithoutFeedback>
@@ -221,9 +253,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#888',
-    marginTop: -12
+    marginTop: -12,
   },
-dropdown: {
+  dropdown: {
     position: 'absolute',
     display: 'flex',
     flexDirection: 'row',

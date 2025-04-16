@@ -35,9 +35,11 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
   if (!visible) return null;
 
   const selectedPlayerOut = selectedPlayers.find(
-    p => p.id === substituteOutPlayerId
+    p => p.id === substituteOutPlayerId,
   );
-  const filteredPlayers = selectedPlayerOut ? [selectedPlayerOut] : selectedPlayers;
+  const filteredPlayers = selectedPlayerOut
+    ? [selectedPlayerOut]
+    : selectedPlayers;
 
   return (
     <View style={styles.substitutionModal}>
@@ -74,11 +76,13 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                   ]}
                   onPress={() =>
                     onSelectPlayerToRemove(
-                      substituteOutPlayerId === item.id ? null : item.id
+                      substituteOutPlayerId === item.id ? null : item.id,
                     )
                   }
                 >
-                  <Text>{item.surname} (#{item.number})</Text>
+                  <Text>
+                    {item.surname} (#{item.number})
+                  </Text>
                 </TouchableOpacity>
               )}
             />
@@ -101,7 +105,9 @@ const SubstitutionModal: React.FC<SubstitutionModalProps> = ({
                       style={styles.modalPlayerItem}
                       onPress={() => onPerformSubstitution(item.id)}
                     >
-                      <Text>{item.surname} (#{item.number})</Text>
+                      <Text>
+                        {item.surname} (#{item.number})
+                      </Text>
                     </TouchableOpacity>
                   )}
                   scrollEnabled={false}

@@ -9,10 +9,16 @@ interface ScoreButtonsProps {
 const ScoreButtons: React.FC<ScoreButtonsProps> = ({ onScoreButtonClick }) => (
   <View style={styles.scoreButtonsContainer}>
     <View style={styles.scoreButtonsRow}>
-      <TouchableOpacity style={styles.scoreButton} onPress={() => onScoreButtonClick(false, 'Ponto Adversário')}>
+      <TouchableOpacity
+        style={styles.scoreButton}
+        onPress={() => onScoreButtonClick(false, 'Ponto Adversário')}
+      >
         <Text style={styles.scoreButtonText}>Ponto Adversário</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.scoreButton} onPress={() => onScoreButtonClick(true, 'Erro Adversário')}>
+      <TouchableOpacity
+        style={styles.scoreButton}
+        onPress={() => onScoreButtonClick(true, 'Erro Adversário')}
+      >
         <Text style={styles.scoreButtonText}>Erro Adversário</Text>
       </TouchableOpacity>
     </View>

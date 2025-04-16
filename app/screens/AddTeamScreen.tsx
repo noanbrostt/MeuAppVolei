@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+} from 'react-native';
 import { router } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
@@ -59,7 +67,10 @@ const AddTeamScreen = () => {
         value={teamName}
         onChangeText={text => setTeamName(text)}
       />
-      <TouchableOpacity style={[styles.colorPreview, { backgroundColor: teamColor }]} onPress={toggleColorPicker}>
+      <TouchableOpacity
+        style={[styles.colorPreview, { backgroundColor: teamColor }]}
+        onPress={toggleColorPicker}
+      >
         <Text>Selecionar Cor</Text>
       </TouchableOpacity>
       <TextInput
@@ -74,7 +85,10 @@ const AddTeamScreen = () => {
         disabled={loading}
       />
 
-      <Modal isVisible={isColorPickerVisible} onBackdropPress={toggleColorPicker}>
+      <Modal
+        isVisible={isColorPickerVisible}
+        onBackdropPress={toggleColorPicker}
+      >
         <View style={styles.colorPickerModal}>
           <WheelColorPicker
             color={teamColor}
