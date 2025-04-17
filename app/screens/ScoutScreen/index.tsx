@@ -34,6 +34,7 @@ interface PointLogType {
   surname?: string;
   action?: string;
   quality?: number;
+  isOurPoint?: boolean; // Adicionamos essa propriedade para rastrear se a ação gerou ponto para o nosso time
 }
 
 const ScoutScreen = () => {
@@ -135,7 +136,6 @@ const ScoutScreen = () => {
         const initialPlayerIds = playersString.split(',');
 
         for (const playerId of initialPlayerIds) {
-          // Referência ao documento do jogador na subcoleção 'players' do time
           const playerDoc = await getDoc(
             doc(db, 'teams', teamId, 'players', playerId),
           );
@@ -182,7 +182,6 @@ const ScoutScreen = () => {
     setError(null);
     try {
       const allPlayersData: Player[] = [];
-      // Referência à subcoleção 'players' do time
       const playersCollectionRef = collection(db, 'teams', teamId, 'players');
       const querySnapshot = await getDocs(playersCollectionRef);
       querySnapshot.forEach(doc => {
@@ -215,6 +214,7 @@ const ScoutScreen = () => {
         selectedActionForPlayer,
         selectedActionQuality,
         true,
+        undefined,
       );
       resetSelectionMode();
     } else if (
@@ -283,15 +283,18 @@ const ScoutScreen = () => {
     shouldUpdateScore: boolean = false,
     isOurPointOverride?: boolean,
   ) => {
+    const isOurPoint =
+      isOurPointOverride !== undefined ? isOurPointOverride : quality === 3;
     const newLogEntry: PointLogType = {
       playerId,
       surname: selectedPlayerForAction?.surname || 'Desconhecido',
       action,
       quality,
+      isOurPoint, // Registrando se foi ponto nosso
     };
     console.log('Novo ponto registrado:', newLogEntry);
     setPointLog(prevLog => {
-      const updatedLog = [...pointLog, newLogEntry];
+      const updatedLog = [...prevLog, newLogEntry];
       if (scrollViewRef.current) {
         scrollViewRef.current?.scrollTo({ y: 0, animated: true });
       }
@@ -299,8 +302,6 @@ const ScoutScreen = () => {
     });
 
     if (shouldUpdateScore) {
-      const isOurPoint =
-        isOurPointOverride !== undefined ? isOurPointOverride : quality === 3;
       if (isOurPoint) {
         setOurScore(prevScore => prevScore + 1);
       } else if (quality === 0 || !isOurPointOverride) {
@@ -321,7 +322,25 @@ const ScoutScreen = () => {
       const lastPoint = pointLog[pointLog.length - 1];
       const newLog = pointLog.slice(0, -1);
       setPointLog(newLog);
-      Alert.alert('Ação Desfeita', 'A última ação foi removida.');
+
+      // Retroceder o placar se a última ação foi um ponto
+      if (
+        lastPoint.action === 'Ponto Nosso' ||
+        (lastPoint.quality === 3 &&
+          ['Ataque', 'Bloqueio', 'Saque'].includes(lastPoint.action!))
+      ) {
+        setOurScore(prevScore => Math.max(0, prevScore - 1));
+      } else if (
+        lastPoint.action === 'Ponto Adversário' ||
+        lastPoint.quality === 0
+      ) {
+        setOpponentScore(prevScore => Math.max(0, prevScore - 1));
+      }
+
+      Alert.alert(
+        'Ação Desfeita',
+        'A última ação foi removida e o placar foi ajustado.',
+      );
     } else {
       Alert.alert('Atenção', 'Não há ações para desfazer.');
     }
