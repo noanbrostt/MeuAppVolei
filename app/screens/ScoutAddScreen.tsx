@@ -82,9 +82,9 @@ const ScoutAddScreen = () => {
     setLoadingPlayers(true);
     setErrorPlayers(null);
     try {
-      const playersCollectionRef = collection(db, 'players');
-      const q = query(playersCollectionRef, where('teamId', '==', teamId));
-      const playersSnapshot = await getDocs(q);
+      // Referência à subcoleção 'players' do time selecionado
+      const playersCollectionRef = collection(db, 'teams', teamId, 'players');
+      const playersSnapshot = await getDocs(playersCollectionRef);
       const playersList = playersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...(doc.data() as Omit<Player, 'id'>),
@@ -194,7 +194,6 @@ const ScoutAddScreen = () => {
             }
           }}
         >
-          {/* Só exibe essa opção se ainda não escolheu nenhum time */}
           {selectedTeamId === null && (
             <Picker.Item label="Selecione um Time" value={null} />
           )}

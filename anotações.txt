@@ -1,10 +1,6 @@
-Ao apagar um time, os jogadores desse time não estão sendo apagados juntos
-
 Colocar a lista de times e atletas em order alfabética
 
 Ao retirar a última ação, o placar não volta
-
-Guardar a data de aniversário das pessoas também
 
 Adicionar a lista de scouts em ordem cronológica
 

@@ -14,7 +14,7 @@ import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 
 import RadarChart from './RadarChart';
-import EfficiencyBarChart from './EfficiencyBarChart'; // novo gráfico colorido
+import EfficiencyBarChart from './EfficiencyBarChart';
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -38,9 +38,8 @@ const ScoutDetailScreen = () => {
   useEffect(() => {
     const fetchActions = async () => {
       try {
-        const querySnapshot = await getDocs(
-          collection(db, 'games', gameId, 'actions'),
-        );
+        const actionsRef = collection(db, 'games', gameId, 'actions');
+        const querySnapshot = await getDocs(actionsRef);
         const fetched: Action[] = [];
         querySnapshot.forEach(doc => fetched.push(doc.data() as Action));
         setActions(fetched);
@@ -54,9 +53,7 @@ const ScoutDetailScreen = () => {
         ).sort();
         uniquePlayers.unshift('Time Todo');
 
-        const uniqueSets = Array.from(
-          new Set(fetched.map(a => a.setId)),
-        ).sort();
+        const uniqueSets = Array.from(new Set(fetched.map(a => a.setId))).sort();
         uniqueSets.unshift('Jogo inteiro');
 
         setPlayers(uniquePlayers);
@@ -149,14 +146,13 @@ const ScoutDetailScreen = () => {
 
       {filtered.length > 0 ? (
         <>
-          {/* <Text style={styles.graphTitle}>Ações registradas:</Text> */}
           <RadarChart data={radarData} />
           <EfficiencyBarChart
             data={barData}
             barColors={{
-              positive: '#FF9800', // cor para eficiência positiva
-              negative: '#F44336', // cor para eficiência negativa
-              neutral: '#BDBDBD', // cor quando não tem ações
+              positive: '#FF9800',
+              negative: '#F44336',
+              neutral: '#BDBDBD',
             }}
           />
         </>

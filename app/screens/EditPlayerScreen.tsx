@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TextInput,
-  Button,
   StyleSheet,
   Alert,
   ScrollView,
@@ -24,9 +23,9 @@ const EditPlayerScreen = () => {
   const [number, setNumber] = useState('');
   const [position, setPosition] = useState('');
   const [birthday, setBirthday] = useState('');
-  const [tempBirthday, setTempBirthday] = useState(''); // Novo estado temporário
+  const [tempBirthday, setTempBirthday] = useState('');
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [datePickerValue, setDatePickerValue] = useState(new Date()); // Estado para o valor do DatePicker
+  const [datePickerValue, setDatePickerValue] = useState(new Date());
   const [rg, setRg] = useState('');
   const [cpf, setCpf] = useState('');
   const [allergies, setAllergies] = useState('');
@@ -44,44 +43,43 @@ const EditPlayerScreen = () => {
   }, [teamId, playerId]);
 
   useEffect(() => {
-    // Inicializa o estado temporário com o valor inicial do birthday
     setTempBirthday(birthday);
-    // Tenta converter a string de aniversário para um objeto Date para o DatePicker
     if (birthday) {
       const [day, month, year] = birthday.split('/');
-      const dateObject = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      const dateObject = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10) - 1,
+        parseInt(day, 10),
+      );
       if (!isNaN(dateObject.getTime())) {
         setDatePickerValue(dateObject);
       } else {
-        setDatePickerValue(new Date()); // Fallback para data atual se a string for inválida
+        setDatePickerValue(new Date());
       }
     } else {
-      setDatePickerValue(new Date()); // Se birthday estiver vazio, usa a data atual
+      setDatePickerValue(new Date());
     }
   }, [birthday]);
 
   const loadPlayerData = async (teamId: string, playerId: string) => {
     setLoading(true);
     try {
-      const playerDocRef = doc(db, 'players', playerId);
+      // Referência ao documento do jogador na subcoleção 'players' do time
+      const playerDocRef = doc(db, 'teams', teamId, 'players', playerId);
       const docSnap = await getDoc(playerDocRef);
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data?.teamId !== teamId) {
-          setError('Jogador não encontrado neste time.');
-        } else {
-          setFullName(data?.fullName || '');
-          setSurname(data?.surname || '');
-          setNumber(String(data?.number) || '');
-          setPosition(data?.position || '');
-          setBirthday(data?.birthday || '');
-          setTempBirthday(data?.birthday || ''); // Inicializa tempBirthday aqui também
-          setRg(data?.rg || '');
-          setCpf(data?.cpf || '');
-          setAllergies(data?.allergies || '');
-        }
+        setFullName(data?.fullName || '');
+        setSurname(data?.surname || '');
+        setNumber(String(data?.number) || '');
+        setPosition(data?.position || '');
+        setBirthday(data?.birthday || '');
+        setTempBirthday(data?.birthday || '');
+        setRg(data?.rg || '');
+        setCpf(data?.cpf || '');
+        setAllergies(data?.allergies || '');
       } else {
-        setError('Jogador não encontrado.');
+        setError('Jogador não encontrado neste time.');
       }
     } catch (e: any) {
       setError('Erro ao carregar os dados do jogador.');
@@ -97,7 +95,7 @@ const EditPlayerScreen = () => {
       const formattedDate = selectedDate.toLocaleDateString('pt-BR');
       setBirthday(formattedDate);
       setTempBirthday(formattedDate);
-      setDatePickerValue(selectedDate); // Atualiza o valor do DatePicker
+      setDatePickerValue(selectedDate);
     } else {
       setBirthday(tempBirthday);
     }
@@ -127,17 +125,18 @@ const EditPlayerScreen = () => {
 
     try {
       if (teamId && playerId) {
-        const playerDocRef = doc(db, 'players', playerId as string);
+        // Referência ao documento do jogador na subcoleção 'players' do time
+        const playerDocRef = doc(db, 'teams', teamId, 'players', playerId);
         await updateDoc(playerDocRef, {
           fullName: fullName.trim(),
           surname: surname !== '' ? surname.trim() : fullName.split(' ')[0],
           number: parsedNumber,
           position: position,
-          birthday: birthday, // Salva o estado 'birthday' (string formatada)
+          birthday: birthday,
           rg: rg.trim(),
           cpf: cpf.trim(),
           allergies: allergies.trim(),
-          teamId: teamId, // Garante que o teamId não seja alterado
+          // teamId: teamId, // Não precisa mais manter o teamId aqui
         });
         Alert.alert('Sucesso', 'Dados do jogador atualizados com sucesso!', [
           {
@@ -237,11 +236,7 @@ const EditPlayerScreen = () => {
         style={styles.dateInputContainer}
         onPress={showDatepicker}
       >
-        <TextInput
-          style={styles.dateInput}
-          value={birthday}
-          editable={false}
-        />
+        <TextInput style={styles.dateInput} value={birthday} editable={false} />
         <Icon
           name="calendar"
           size={20}
@@ -253,7 +248,7 @@ const EditPlayerScreen = () => {
       {showDatePicker && (
         <DateTimePicker
           testID="dateTimePicker"
-          value={datePickerValue} // Use o estado datePickerValue aqui
+          value={datePickerValue}
           mode="date"
           is24Hour={true}
           display="default"

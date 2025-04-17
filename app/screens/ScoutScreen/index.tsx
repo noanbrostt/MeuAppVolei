@@ -66,9 +66,9 @@ const ScoutScreen = () => {
     number | null
   >(null);
   const [pointLog, setPointLog] = useState<PointLogType[]>([]);
-  const scrollViewRef = useRef<any>(null); // Usar 'any' para evitar erros de tipo com ref
-  const navigation = useNavigation(); // Hook para acessar a navegação
-  const hasUnsavedData = useRef(false); // Ref para rastrear dados não salvos
+  const scrollViewRef = useRef<any>(null);
+  const navigation = useNavigation();
+  const hasUnsavedData = useRef(false);
   const actions = [
     'Defesa',
     'Levantamento',
@@ -79,7 +79,6 @@ const ScoutScreen = () => {
   ];
 
   useEffect(() => {
-    // Atualiza a flag de dados não salvos sempre que o pointLog mudar
     if (pointLog.length > 0) {
       hasUnsavedData.current = true;
     } else {
@@ -90,9 +89,8 @@ const ScoutScreen = () => {
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', e => {
       if (hasUnsavedData.current) {
-        e.preventDefault(); // Impede a navegação por padrão
+        e.preventDefault();
 
-        // Mostra um alerta para o usuário
         Alert.alert(
           'Dados Não Salvos',
           'Você tem dados não salvos. Deseja realmente sair e perder as alterações?',
@@ -101,7 +99,6 @@ const ScoutScreen = () => {
             {
               text: 'Sair',
               style: 'destructive',
-              // Se o usuário confirmar, prossegue com a navegação
               onPress: () => navigation.dispatch(e.data.action),
             },
           ],
@@ -109,7 +106,7 @@ const ScoutScreen = () => {
       }
     });
 
-    return unsubscribe; // Remove o listener quando o componente é desmontado
+    return unsubscribe;
   }, [navigation]);
 
   useEffect(() => {
@@ -134,12 +131,14 @@ const ScoutScreen = () => {
       setLoadingInitialPlayers(true);
       setError(null);
       try {
-        const playersCollection = collection(db, 'players');
         const selectedPlayersData: Player[] = [];
         const initialPlayerIds = playersString.split(',');
 
         for (const playerId of initialPlayerIds) {
-          const playerDoc = await getDoc(doc(playersCollection, playerId));
+          // Referência ao documento do jogador na subcoleção 'players' do time
+          const playerDoc = await getDoc(
+            doc(db, 'teams', teamId, 'players', playerId),
+          );
           if (playerDoc.exists()) {
             selectedPlayersData.push({
               id: playerDoc.id,
@@ -175,21 +174,20 @@ const ScoutScreen = () => {
     };
 
     fetchInitialPlayers();
-  }, [playersString]);
+  }, [playersString, teamId]);
 
   const fetchAllTeamPlayersForSubstitution = async () => {
     if (!teamId) return;
     setLoadingAllPlayers(true);
     setError(null);
     try {
-      const playersCollection = collection(db, 'players');
-      const querySnapshot = await getDocs(collection(db, 'players'));
       const allPlayersData: Player[] = [];
+      // Referência à subcoleção 'players' do time
+      const playersCollectionRef = collection(db, 'teams', teamId, 'players');
+      const querySnapshot = await getDocs(playersCollectionRef);
       querySnapshot.forEach(doc => {
         const playerData = doc.data() as Player;
-        if (playerData.teamId === teamId) {
-          allPlayersData.push({ id: doc.id, ...playerData });
-        }
+        allPlayersData.push({ id: doc.id, ...playerData });
       });
       setAllTeamPlayers(
         allPlayersData.filter(p => !selectedPlayers.some(sp => sp.id === p.id)),
@@ -383,23 +381,20 @@ const ScoutScreen = () => {
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
           <ScoutSave
-            ourScore={ourScore} // Passa o placar para o menu
+            ourScore={ourScore}
             opponentScore={opponentScore}
-            pointLog={pointLog} // Passa o log de pontos para o menu
+            pointLog={pointLog}
             teamId={teamId}
             scoutName={scoutName}
             scoutDate={scoutDate}
             onClearPointLog={() => {
-              // Função para limpar o pointLog no ScoutScreen
               setPointLog([]);
             }}
             onResetScores={() => {
-              // Função para resetar os scores no ScoutScreen
               setOurScore(0);
               setOpponentScore(0);
             }}
             onSetHasUnsavedData={value => {
-              // Função para atualizar a flag de dados não salvos
               hasUnsavedData.current = value;
             }}
           />

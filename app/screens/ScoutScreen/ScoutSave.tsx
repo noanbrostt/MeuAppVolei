@@ -41,7 +41,7 @@ const ScoutSave: React.FC<ScoutSaveProps> = ({
           { text: 'Cancelar', style: 'cancel' },
           { text: 'Salvar', onPress: handleSaveSet },
         ],
-        { cancelable: true }
+        { cancelable: true },
       );
     }
   };
@@ -65,19 +65,15 @@ const ScoutSave: React.FC<ScoutSaveProps> = ({
 
       // Salva todas as ações diretamente em /games/{gameId}/actions
       for (const action of pointLog) {
-        console.log("Action a ser salvo:", action);
-        console.log("PointLog a ser salvo:", pointLog);
-
         await addDoc(collection(doc(db, 'games', newGameId), 'actions'), {
           action: action.action,
           playerId: action.playerId,
-          playerSurname: action.surname || 'Desconhecido', // importante para filtros e gráficos
+          playerSurname: action.surname || 'Desconhecido',
           quality: action.quality,
-          setId: `${currentSetNumber}º Set`, // usado para filtragem futura
+          setId: `${currentSetNumber}º Set`,
         });
       }
 
-      // Após salvar com sucesso, perguntar próximo passo
       Alert.alert(
         'Set Salvo!',
         `O ${currentSetNumber}º set foi salvo com sucesso.`,
@@ -100,7 +96,7 @@ const ScoutSave: React.FC<ScoutSaveProps> = ({
             },
           },
         ],
-        { cancelable: false }
+        { cancelable: false },
       );
     } catch (error: any) {
       console.error('Erro ao salvar o set: ', error);

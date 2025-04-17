@@ -4,6 +4,7 @@ export interface Player {
   fullName?: string;
   surname?: string;
   position?: string;
+  birthday?: string;
   rg?: string;
   cpf?: string;
   allergies?: string[];

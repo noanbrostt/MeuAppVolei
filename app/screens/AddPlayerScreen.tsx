@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc } from 'firebase/firestore'; // Import 'doc'
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -39,7 +39,11 @@ const AddPlayerScreen = () => {
     setTempBirthday(birthday);
     if (birthday) {
       const [day, month, year] = birthday.split('/');
-      const dateObject = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      const dateObject = new Date(
+        parseInt(year, 10),
+        parseInt(month, 10) - 1,
+        parseInt(day, 10),
+      );
       if (!isNaN(dateObject.getTime())) {
         setDatePickerValue(dateObject);
       } else {
@@ -86,8 +90,11 @@ const AddPlayerScreen = () => {
 
     try {
       if (teamId) {
-        const playersCollection = collection(db, 'players');
-        await addDoc(playersCollection, {
+        // Cria uma referência para a subcoleção 'players' dentro do documento do time
+        const teamDocumentRef = doc(db, 'teams', teamId);
+        const playersCollectionRef = collection(teamDocumentRef, 'players');
+
+        await addDoc(playersCollectionRef, {
           fullName: fullName.trim(),
           surname: surname !== '' ? surname.trim() : fullName.split(' ')[0],
           number: parsedNumber,
@@ -96,7 +103,7 @@ const AddPlayerScreen = () => {
           rg: rg.trim(),
           cpf: cpf.trim(),
           allergies: allergies.trim(),
-          teamId: teamId,
+          // teamId: teamId, // Não precisa mais salvar o teamId explicitamente na subcoleção
         });
         Alert.alert('Sucesso', 'Jogador adicionado com sucesso!', [
           {

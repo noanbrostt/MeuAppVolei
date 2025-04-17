@@ -30,7 +30,7 @@ interface Player {
   rg?: string;
   cpf?: string;
   allergies?: string[];
-  teamId: string;
+  // teamId: string; // Não precisamos mais do teamId aqui
 }
 
 const PlayersScreen = () => {
@@ -52,16 +52,13 @@ const PlayersScreen = () => {
       }
 
       try {
-        const playersRef = collection(db, 'players'); // Nome da coleção
-        const q = query(
-          playersRef,
-          where('teamId', '==', teamId),
-          orderBy('fullName', 'asc'),
-        ); // Filtra os jogadores do time
+        // Referência à subcoleção 'players' dentro do documento do time
+        const playersRef = collection(db, 'teams', teamId as string, 'players');
+        const q = query(playersRef, orderBy('fullName', 'asc')); // Filtra os jogadores do time (agora implícito na subcoleção)
 
         const querySnapshot = await getDocs(q);
         const playersData = querySnapshot.docs.map(doc => ({
-          id: doc.id, // ID do documento
+          id: doc.id, // ID do documento do jogador dentro da subcoleção
           ...doc.data(), // Dados do jogador
         })) as Player[];
 
@@ -92,7 +89,14 @@ const PlayersScreen = () => {
           onPress: async () => {
             try {
               setLoading(true);
-              const playerDocRef = doc(db, 'players', playerId);
+              // Referência ao documento do jogador dentro da subcoleção do time
+              const playerDocRef = doc(
+                db,
+                'teams',
+                teamId as string,
+                'players',
+                playerId,
+              );
               await deleteDoc(playerDocRef);
               const updatedPlayers = players.filter(
                 player => player.id !== playerId,
