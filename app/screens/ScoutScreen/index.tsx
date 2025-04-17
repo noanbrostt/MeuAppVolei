@@ -151,11 +151,11 @@ const ScoutScreen = () => {
         }
 
         const positionOrder = {
-          Ponteiro: 1,
-          Central: 2,
-          Líbero: 3,
+          Levantador: 1,
+          Ponteiro: 2,
+          Central: 3,
           Oposto: 4,
-          Levantador: 5,
+          Líbero: 5,
         };
 
         selectedPlayersData.sort((a, b) => {
@@ -284,7 +284,7 @@ const ScoutScreen = () => {
     quality?: number,
     shouldUpdateScore: boolean = false,
     isOurPointOverride?: boolean,
-  ) => {    
+  ) => {
     const newLogEntry: PointLogType = {
       playerId,
       surname: selectedPlayerForAction?.surname || 'Desconhecido',
