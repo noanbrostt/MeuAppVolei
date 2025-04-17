@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,14 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddPlayerScreen = () => {
   const { teamId: teamId } = useLocalSearchParams();
@@ -21,6 +23,10 @@ const AddPlayerScreen = () => {
   const [surname, setSurname] = useState('');
   const [number, setNumber] = useState('');
   const [position, setPosition] = useState('');
+  const [birthday, setBirthday] = useState('');
+  const [tempBirthday, setTempBirthday] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerValue, setDatePickerValue] = useState(new Date());
   const [rg, setRg] = useState('');
   const [cpf, setCpf] = useState('');
   const [allergies, setAllergies] = useState('');
@@ -28,6 +34,37 @@ const AddPlayerScreen = () => {
   const [error, setError] = useState<string | null>(null);
 
   const positions = ['Central', 'Levantador', 'Líbero', 'Ponteiro', 'Oposto'];
+
+  useEffect(() => {
+    setTempBirthday(birthday);
+    if (birthday) {
+      const [day, month, year] = birthday.split('/');
+      const dateObject = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      if (!isNaN(dateObject.getTime())) {
+        setDatePickerValue(dateObject);
+      } else {
+        setDatePickerValue(new Date());
+      }
+    } else {
+      setDatePickerValue(new Date());
+    }
+  }, [birthday]);
+
+  const onChangeDate = (event: any, selectedDate: Date | undefined) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      const formattedDate = selectedDate.toLocaleDateString('pt-BR');
+      setBirthday(formattedDate);
+      setTempBirthday(formattedDate);
+      setDatePickerValue(selectedDate);
+    } else {
+      setBirthday(tempBirthday);
+    }
+  };
+
+  const showDatepicker = () => {
+    setShowDatePicker(true);
+  };
 
   const handleAddPlayer = async () => {
     if (!fullName.trim()) {
@@ -55,6 +92,7 @@ const AddPlayerScreen = () => {
           surname: surname !== '' ? surname.trim() : fullName.split(' ')[0],
           number: parsedNumber,
           position: position,
+          birthday: birthday,
           rg: rg.trim(),
           cpf: cpf.trim(),
           allergies: allergies.trim(),
@@ -70,6 +108,9 @@ const AddPlayerScreen = () => {
         setFullName('');
         setNumber('');
         setPosition('');
+        setBirthday('');
+        setTempBirthday('');
+        setDatePickerValue(new Date());
         setRg('');
         setCpf('');
         setAllergies('');
@@ -136,6 +177,37 @@ const AddPlayerScreen = () => {
         </Picker>
       </View>
 
+      <Text style={styles.label}>Data de Nascimento</Text>
+      <TouchableOpacity
+        style={styles.dateInputContainer}
+        onPress={showDatepicker}
+      >
+        <TextInput
+          style={styles.dateInput}
+          value={birthday}
+          placeholder="DD/MM/AAAA"
+          editable={false}
+        />
+        <Icon
+          name="calendar"
+          size={20}
+          color="#888"
+          style={styles.calendarIcon}
+        />
+      </TouchableOpacity>
+
+      {showDatePicker && (
+        <DateTimePicker
+          testID="dateTimePicker"
+          value={datePickerValue}
+          mode="date"
+          is24Hour={true}
+          display="default"
+          onChange={onChangeDate}
+          locale="pt-BR"
+        />
+      )}
+
       <Text style={styles.label}>RG (Opcional)</Text>
       <TextInput
         style={styles.input}
@@ -170,7 +242,7 @@ const AddPlayerScreen = () => {
         disabled={loading}
       >
         <Text style={styles.saveButtonText}>
-          {loading ? 'SalvaAdicionandondo...' : 'Adicionar Jogador'}
+          {loading ? 'Adicionando...' : 'Adicionar Jogador'}
         </Text>
       </TouchableOpacity>
     </ScrollView>
@@ -181,15 +253,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  backButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
   },
   title: {
     fontSize: 24,
@@ -234,6 +297,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderRadius: 8,
     color: '#000',
+  },
+  dateInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  dateInput: {
+    flex: 1,
+    height: 40,
+  },
+  calendarIcon: {
+    marginLeft: 8,
   },
   saveButton: {
     backgroundColor: '#007bff',

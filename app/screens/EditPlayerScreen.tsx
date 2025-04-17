@@ -8,12 +8,14 @@ import {
   Alert,
   ScrollView,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const EditPlayerScreen = () => {
   const { teamId, playerId } = useLocalSearchParams();
@@ -21,6 +23,10 @@ const EditPlayerScreen = () => {
   const [surname, setSurname] = useState('');
   const [number, setNumber] = useState('');
   const [position, setPosition] = useState('');
+  const [birthday, setBirthday] = useState('');
+  const [tempBirthday, setTempBirthday] = useState(''); // Novo estado temporário
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerValue, setDatePickerValue] = useState(new Date()); // Estado para o valor do DatePicker
   const [rg, setRg] = useState('');
   const [cpf, setCpf] = useState('');
   const [allergies, setAllergies] = useState('');
@@ -37,6 +43,23 @@ const EditPlayerScreen = () => {
     }
   }, [teamId, playerId]);
 
+  useEffect(() => {
+    // Inicializa o estado temporário com o valor inicial do birthday
+    setTempBirthday(birthday);
+    // Tenta converter a string de aniversário para um objeto Date para o DatePicker
+    if (birthday) {
+      const [day, month, year] = birthday.split('/');
+      const dateObject = new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10));
+      if (!isNaN(dateObject.getTime())) {
+        setDatePickerValue(dateObject);
+      } else {
+        setDatePickerValue(new Date()); // Fallback para data atual se a string for inválida
+      }
+    } else {
+      setDatePickerValue(new Date()); // Se birthday estiver vazio, usa a data atual
+    }
+  }, [birthday]);
+
   const loadPlayerData = async (teamId: string, playerId: string) => {
     setLoading(true);
     try {
@@ -51,6 +74,8 @@ const EditPlayerScreen = () => {
           setSurname(data?.surname || '');
           setNumber(String(data?.number) || '');
           setPosition(data?.position || '');
+          setBirthday(data?.birthday || '');
+          setTempBirthday(data?.birthday || ''); // Inicializa tempBirthday aqui também
           setRg(data?.rg || '');
           setCpf(data?.cpf || '');
           setAllergies(data?.allergies || '');
@@ -64,6 +89,22 @@ const EditPlayerScreen = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const onChangeDate = (event: any, selectedDate: Date | undefined) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      const formattedDate = selectedDate.toLocaleDateString('pt-BR');
+      setBirthday(formattedDate);
+      setTempBirthday(formattedDate);
+      setDatePickerValue(selectedDate); // Atualiza o valor do DatePicker
+    } else {
+      setBirthday(tempBirthday);
+    }
+  };
+
+  const showDatepicker = () => {
+    setShowDatePicker(true);
   };
 
   const handleSavePlayer = async () => {
@@ -92,6 +133,7 @@ const EditPlayerScreen = () => {
           surname: surname !== '' ? surname.trim() : fullName.split(' ')[0],
           number: parsedNumber,
           position: position,
+          birthday: birthday, // Salva o estado 'birthday' (string formatada)
           rg: rg.trim(),
           cpf: cpf.trim(),
           allergies: allergies.trim(),
@@ -189,6 +231,36 @@ const EditPlayerScreen = () => {
           ))}
         </Picker>
       </View>
+
+      <Text style={styles.label}>Data</Text>
+      <TouchableOpacity
+        style={styles.dateInputContainer}
+        onPress={showDatepicker}
+      >
+        <TextInput
+          style={styles.dateInput}
+          value={birthday}
+          editable={false}
+        />
+        <Icon
+          name="calendar"
+          size={20}
+          color="#888"
+          style={styles.calendarIcon}
+        />
+      </TouchableOpacity>
+
+      {showDatePicker && (
+        <DateTimePicker
+          testID="dateTimePicker"
+          value={datePickerValue} // Use o estado datePickerValue aqui
+          mode="date"
+          is24Hour={true}
+          display="default"
+          onChange={onChangeDate}
+          locale="pt-BR"
+        />
+      )}
 
       <Text style={styles.label}>RG (Opcional)</Text>
       <TextInput
@@ -288,6 +360,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderRadius: 8,
     color: '#000',
+  },
+  dateInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  dateInput: {
+    flex: 1,
+    height: 40,
+  },
+  calendarIcon: {
+    marginLeft: 8,
   },
   saveButton: {
     backgroundColor: '#007bff',
