@@ -8,7 +8,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import { Player } from '../types';
+import { Player } from '../../types';
 
 interface PlayerListProps {
   players: Player[];

@@ -4,8 +4,9 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { router } from 'expo-router';
 import { db } from '../../../src/config/firebaseConfig';
 import { collection, addDoc, doc } from 'firebase/firestore';
+import { serverTimestamp } from 'firebase/firestore';
 
-interface ScoutMenuProps {
+interface ScoutSaveProps {
   ourScore: number;
   opponentScore: number;
   pointLog: any[];
@@ -17,7 +18,7 @@ interface ScoutMenuProps {
   onSetHasUnsavedData: (value: boolean) => void;
 }
 
-const ScoutMenu: React.FC<ScoutMenuProps> = ({
+const ScoutSave: React.FC<ScoutSaveProps> = ({
   ourScore,
   opponentScore,
   pointLog,
@@ -32,7 +33,7 @@ const ScoutMenu: React.FC<ScoutMenuProps> = ({
   const [currentSetNumber, setCurrentSetNumber] = useState<number>(1);
 
   const confirmSaveSet = () => {
-    if (pointLog.length > 0) {      
+    if (pointLog.length > 0) {
       Alert.alert(
         'Salvar Set',
         'Deseja salvar este set?',
@@ -56,45 +57,38 @@ const ScoutMenu: React.FC<ScoutMenuProps> = ({
           name: scoutName,
           date: scoutDate,
           teamId,
+          savedAt: serverTimestamp(),
         });
         newGameId = gameDoc.id;
         setGameId(newGameId);
       }
 
-      const setDocRef = await addDoc(
-        collection(doc(db, 'games', newGameId), 'sets'),
-        {
-          setNumber: currentSetNumber,
-          ourScore,
-          opponentScore,
-        }
-      );
-
-      const setId = setDocRef.id;
-
+      // Salva todas as ações diretamente em /games/{gameId}/actions
       for (const action of pointLog) {
-        await addDoc(
-          collection(doc(doc(db, 'games', newGameId), 'sets', setId), 'actions'),
-          {
-            action: action.action,
-            playerId: action.playerId,
-            quality: action.quality,
-          }
-        );
+        console.log("Action a ser salvo:", action);
+        console.log("PointLog a ser salvo:", pointLog);
+
+        await addDoc(collection(doc(db, 'games', newGameId), 'actions'), {
+          action: action.action,
+          playerId: action.playerId,
+          playerSurname: action.surname || 'Desconhecido', // importante para filtros e gráficos
+          quality: action.quality,
+          setId: `${currentSetNumber}º Set`, // usado para filtragem futura
+        });
       }
 
       // Após salvar com sucesso, perguntar próximo passo
       Alert.alert(
         'Set Salvo!',
-        `O set ${currentSetNumber} foi salvo com sucesso.`,
+        `O ${currentSetNumber}º set foi salvo com sucesso.`,
         [
           {
             text: 'Novo Set',
             onPress: () => {
               onResetScores();
               onClearPointLog();
-              onSetHasUnsavedData(false);
               setCurrentSetNumber(prev => prev + 1);
+              onSetHasUnsavedData(false);
             },
           },
           {
@@ -102,7 +96,7 @@ const ScoutMenu: React.FC<ScoutMenuProps> = ({
             style: 'destructive',
             onPress: () => {
               onSetHasUnsavedData(false);
-              router.push('/screens/ScoutHistoryScreen'); // ou a rota que quiser
+              router.push('/screens/ScoutHistoryScreen');
             },
           },
         ],
@@ -128,4 +122,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ScoutMenu;
+export default ScoutSave;

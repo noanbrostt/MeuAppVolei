@@ -14,13 +14,13 @@ import * as NavigationBar from 'expo-navigation-bar';
 import { db } from '../../../src/config/firebaseConfig';
 import { collection, doc, getDocs, getDoc } from 'firebase/firestore';
 
-import { Player } from '../types';
+import { Player } from '../../types';
 import PlayerList from './PlayerList';
 import ActionButtons from './ActionButtons';
 import ScoreButtons from './ScoreButtons';
 import PointLog from './PointLog';
 import SubstitutionModal from './SubstitutionModal';
-import ScoutMenu from './ScoutMenu';
+import ScoutSave from './ScoutSave';
 
 type RouteParams = {
   teamId: string;
@@ -284,10 +284,10 @@ const ScoutScreen = () => {
     quality?: number,
     shouldUpdateScore: boolean = false,
     isOurPointOverride?: boolean,
-  ) => {
+  ) => {    
     const newLogEntry: PointLogType = {
       playerId,
-      surname: selectedPlayerForAction?.surname,
+      surname: selectedPlayerForAction?.surname || 'Desconhecido',
       action,
       quality,
     };
@@ -382,7 +382,7 @@ const ScoutScreen = () => {
       <StatusBar hidden={true} />
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
-          <ScoutMenu
+          <ScoutSave
             ourScore={ourScore} // Passa o placar para o menu
             opponentScore={opponentScore}
             pointLog={pointLog} // Passa o log de pontos para o menu

@@ -61,7 +61,7 @@ const ScoutHistoryScreen = () => {
     <TouchableOpacity
       style={styles.scoutItem}
       onPress={() => {
-        router.push(`/screens/ScoutDetailScreen?id=${item.id}`);
+        router.push(`/screens/ScoutDetailScreen?gameId=${item.id}`);
       }}
     >
       <View style={styles.scoutInfo}>

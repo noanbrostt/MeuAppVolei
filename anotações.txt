@@ -6,6 +6,8 @@ Ao retirar a última ação, o placar não volta
 
 Guardar a data de aniversário das pessoas também
 
+Adicionar a lista de scouts em ordem cronológica
+
 
 
 .prettierrc
