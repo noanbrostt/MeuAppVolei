@@ -14,6 +14,7 @@ import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 
 import RadarChart from './RadarChart';
+import EfficiencyBarChart from './EfficiencyBarChart'; // novo gráfico colorido
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -83,7 +84,7 @@ const ScoutDetailScreen = () => {
     return acc;
   }, {});
 
-  const fundamentals = ['Passe', 'Bloqueio', 'Defesa', 'Saque', 'Ataque'];
+  const fundamentals = ['Passe', 'Defesa', 'Bloqueio', 'Ataque', 'Saque', 'Levantamento'];
 
   const radarData = Object.fromEntries(
     fundamentals.map(action => {
@@ -93,6 +94,16 @@ const ScoutDetailScreen = () => {
       const count3 = items.filter(i => i.quality === 3).length;
       let efficiency = (count2 + count3) / items.length;
       return [action, efficiency];
+    }),
+  );
+
+  const barData = Object.fromEntries(
+    fundamentals.map(action => {
+      const items = filtered.filter(f => f.action === action);
+      if (items.length === 0) return [action, 0.04141];
+      const count0 = items.filter(i => i.quality === 0).length;
+      const count3 = items.filter(i => i.quality === 3).length;
+      return [action, { 0: count0, 3: count3 }];
     }),
   );
 
@@ -140,6 +151,14 @@ const ScoutDetailScreen = () => {
         <>
           {/* <Text style={styles.graphTitle}>Ações registradas:</Text> */}
           <RadarChart data={radarData} />
+          <EfficiencyBarChart
+            data={barData}
+            barColors={{
+              positive: '#FF9800', // cor para eficiência positiva
+              negative: '#F44336', // cor para eficiência negativa
+              neutral: '#BDBDBD', // cor quando não tem ações
+            }}
+          />
         </>
       ) : (
         <Text style={styles.noData}>Nenhuma ação para esse filtro.</Text>

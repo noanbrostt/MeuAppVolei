@@ -4,7 +4,14 @@ import Svg, { Polygon, Line, Text as SvgText, Circle } from 'react-native-svg';
 import Modal from 'react-native-modal';
 import { Ionicons } from '@expo/vector-icons';
 
-const actions = ['Passe', 'Defesa', 'Bloqueio', 'Ataque', 'Saque'];
+const actions = [
+  'Passe',
+  'Defesa',
+  'Bloqueio',
+  'Ataque',
+  'Saque',
+  'Levantamento',
+];
 const radius = 80;
 const size = radius * 2 + 50;
 const center = size / 2;
@@ -13,6 +20,64 @@ const levels = 4;
 type Props = {
   data: { [key: string]: number }; // valores entre 0 e 1 (eficiência)
 };
+
+const styles = StyleSheet.create({
+  cardContainer: {
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    marginVertical: 8,
+    marginHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    alignItems: 'center', // Centraliza o conteúdo dentro do card
+  },
+  header: {
+    flexDirection: 'row',
+    gap: 6,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  modalText: {
+    fontSize: 14,
+    textAlign: 'center',
+    color: '#555',
+    marginBottom: 20,
+  },
+  button: {
+    backgroundColor: '#6200ee',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+});
 
 export default function RadarChart({ data }: Props) {
   const [isModalVisible, setModalVisible] = useState(false);
@@ -42,12 +107,17 @@ export default function RadarChart({ data }: Props) {
     .join(' ');
 
   return (
-    <View style={{ alignItems: 'center' }}>
+    <View style={styles.cardContainer}>
       {/* Título com ícone */}
       <View>
         <Pressable onPress={() => setModalVisible(true)} style={styles.header}>
-          <Text style={styles.title}>Eficiência</Text>
-          <Ionicons name="help-circle-outline" size={18} color="#666" style={{marginBottom: -2}} />
+          <Text style={styles.title}>Positividade</Text>
+          <Ionicons
+            name="help-circle-outline"
+            size={18}
+            color="#666"
+            style={{ marginBottom: -2 }}
+          />
         </Pressable>
       </View>
 
@@ -118,8 +188,6 @@ export default function RadarChart({ data }: Props) {
         {actions.map((action, i) => {
           const angle = i * angleSlice;
           const { x, y } = getAxisPoint(angle, radius + 12);
-          console.log(data);
-
           return (
             <SvgText
               key={`label-${i}`}
@@ -131,7 +199,7 @@ export default function RadarChart({ data }: Props) {
               fontWeight="bold"
               textAnchor="middle"
             >
-              {action}
+              {action === 'Levantamento' ? 'Levant.' : action}
             </SvgText>
           );
         })}
@@ -143,14 +211,16 @@ export default function RadarChart({ data }: Props) {
         onBackdropPress={() => setModalVisible(false)}
       >
         <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Como é calculada a eficiência?</Text>
+          <Text style={styles.modalTitle}>
+            Como é calculada a positividade?
+          </Text>
           <Text style={styles.modalText}>
-            Eficiência = (Ações nível 3 + Ações nível 2) ÷ Total de Ações.
+            Positividade = (Ações nível 3 + Ações nível 2) ÷ Total de Ações.
           </Text>
           <Text style={styles.modalTitle}>Eu errei ou não fiz essa ação?</Text>
           <Text style={styles.modalText}>
-            Quando o fundamento fica cinza, significa que nenhuma
-            ação desse tipo foi registrada (Ex: Para todo líbero o "Saque" ficará cinza).
+            Quando o fundamento fica cinza, significa que nenhuma ação desse
+            tipo foi registrada (Ex: Para todo líbero o "Saque" ficará cinza).
           </Text>
           <Pressable
             style={styles.button}
@@ -163,44 +233,3 @@ export default function RadarChart({ data }: Props) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    gap: 6,
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 10,
-  },
-  modalText: {
-    fontSize: 14,
-    textAlign: 'center',
-    color: '#555',
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#6200ee',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-});
