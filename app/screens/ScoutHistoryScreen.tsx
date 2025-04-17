@@ -8,14 +8,16 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from '../../src/config/firebaseConfig';
+import { Timestamp } from 'firebase/firestore';
 
 interface Scout {
   id: string;
   name: string;
   date: string;
   teamName: string;
+  savedAt: Timestamp; // Adicionando a propriedade savedAt
 }
 
 const ScoutHistoryScreen = () => {
@@ -33,8 +35,10 @@ const ScoutHistoryScreen = () => {
           teamsMap[doc.id] = doc.data().name;
         });
 
-        // 2. Buscar jogos (scouts)
-        const gamesSnapshot = await getDocs(collection(db, 'games'));
+        // 2. Buscar jogos (scouts) e ordenar por 'savedAt' em ordem decrescente
+        const gamesCollection = collection(db, 'games');
+        const gamesQuery = query(gamesCollection, orderBy('savedAt', 'desc'));
+        const gamesSnapshot = await getDocs(gamesQuery);
         const scoutData: Scout[] = gamesSnapshot.docs.map(doc => {
           const data = doc.data();
           return {
@@ -42,6 +46,7 @@ const ScoutHistoryScreen = () => {
             name: data.name,
             date: data.date,
             teamName: teamsMap[data.teamId] || 'Time desconhecido',
+            savedAt: data.savedAt, // Capturando o timestamp
           };
         });
 
