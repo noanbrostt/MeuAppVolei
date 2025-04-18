@@ -66,7 +66,15 @@ const ScoutHistoryScreen = () => {
     <TouchableOpacity
       style={styles.scoutItem}
       onPress={() => {
-        router.push(`/screens/ScoutDetailScreen?gameId=${item.id}`);
+        router.push({
+          pathname: '/screens/ScoutDetailScreen',
+          params: {
+            gameId: item.id,
+            scoutName: item.name,
+            teamName: item.teamName,
+            scoutDate: item.date,
+          },
+        });
       }}
     >
       <View style={styles.scoutInfo}>
@@ -77,6 +85,7 @@ const ScoutHistoryScreen = () => {
       <Icon name="chevron-right" size={20} color="#888" />
     </TouchableOpacity>
   );
+  
 
   if (loading) {
     return (

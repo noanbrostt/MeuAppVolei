@@ -1,0 +1,1 @@
+Ao invés de criar um card em cada compontende do relatório, criar um componente para card ou simplesmente uma View no proprio index.tsx

@@ -28,7 +28,11 @@ interface Action {
 }
 
 const ScoutDetailScreen = () => {
-  const { gameId } = useLocalSearchParams<{ gameId: string }>();
+  const { gameId, scoutName, scoutDate } = useLocalSearchParams<{
+    gameId: string;
+    scoutName: string;
+    scoutDate?: string;
+  }>();
   const [actions, setActions] = useState<Action[]>([]);
   const [players, setPlayers] = useState<string[]>([]);
   const [sets, setSets] = useState<string[]>([]);
@@ -57,7 +61,7 @@ const ScoutDetailScreen = () => {
         const uniqueSets = Array.from(
           new Set(fetched.map(a => a.setId)),
         ).sort();
-        uniqueSets.unshift('Jogo inteiro');
+        uniqueSets.unshift('Jogo Inteiro');
 
         setPlayers(uniquePlayers);
         setSets(uniqueSets);
@@ -76,7 +80,7 @@ const ScoutDetailScreen = () => {
   const filtered = actions.filter(
     a =>
       (selectedPlayer === 'Time Todo' || a.playerSurname === selectedPlayer) &&
-      (selectedSet === 'Jogo inteiro' || a.setId === selectedSet),
+      (selectedSet === 'Jogo Inteiro' || a.setId === selectedSet),
   );
 
   const actionSummary = filtered.reduce<Record<string, number>>((acc, cur) => {
@@ -120,40 +124,41 @@ const ScoutDetailScreen = () => {
   const detectarJogadas = () => {
     const ataques = [];
     const contraAtaques = [];
-  
+
     for (let i = 0; i < filtered.length; i++) {
       const atual = filtered[i];
       const segundo = filtered[i + 1];
       const terceiro = filtered[i + 2];
-  
+
       const verificarAtaque = (a1, a2, a3) => {
-        if (!a1 || a1.action !== 'Passe' && a1.action !== 'Defesa') return null;
-  
+        if (!a1 || (a1.action !== 'Passe' && a1.action !== 'Defesa'))
+          return null;
+
         const acoesSeguintes = [a2, a3].filter(Boolean).map(a => a.action);
-  
+
         const temAtaqueSimples = acoesSeguintes.includes('Ataque');
         const temLevantEAtk =
           acoesSeguintes.includes('Levantamento') &&
           acoesSeguintes.includes('Ataque');
-  
+
         if (a1.action === 'Passe' && (temAtaqueSimples || temLevantEAtk)) {
           return 'Atk';
         }
-  
+
         if (a1.action === 'Defesa' && (temAtaqueSimples || temLevantEAtk)) {
           return 'C. Atk.';
         }
-  
+
         return null;
       };
-  
+
       const tipo = verificarAtaque(atual, segundo, terceiro);
       if (tipo === 'Atk') ataques.push(atual);
       if (tipo === 'C. Atk.') contraAtaques.push(atual);
     }
-  
+
     return { ataques, contraAtaques };
-  };  
+  };
 
   const { ataques, contraAtaques } = detectarJogadas();
 
@@ -161,13 +166,17 @@ const ScoutDetailScreen = () => {
     header: ['', ...qualities, 'Total'],
     data: [
       ...fundamentals.map(fundamento => {
-        const actionsByFundamento = filtered.filter(a => a.action === fundamento);
+        const actionsByFundamento = filtered.filter(
+          a => a.action === fundamento,
+        );
         const totalActions = actionsByFundamento.length;
-  
+
         return [
-          fundamento === 'Levantamento' ? 'Levant.' :
-          fundamento === 'Bloqueio' ? 'Bloq.' :
-          fundamento,
+          fundamento === 'Levantamento'
+            ? 'Levant.'
+            : fundamento === 'Bloqueio'
+            ? 'Bloq.'
+            : fundamento,
           ...qualities.map(quality => {
             const count = actionsByFundamento.filter(
               a => a.quality === quality,
@@ -186,14 +195,15 @@ const ScoutDetailScreen = () => {
           <Text style={styles.tableCount}>{totalActions}</Text>,
         ];
       }),
-  
+
       // Linha de Ataque
       [
         <Text style={[styles.specialLabel, { color: '#004fa3' }]}>Atk.</Text>,
         ...qualities.map(quality => {
           const count = ataques.filter(a => a.quality === quality).length;
           const total = ataques.length;
-          const percentage = total > 0 ? ((count / total) * 100).toFixed(1) + '%' : '0%';
+          const percentage =
+            total > 0 ? ((count / total) * 100).toFixed(1) + '%' : '0%';
           return (
             <View style={styles.tableCell}>
               <Text style={styles.tableCount}>{count}</Text>
@@ -203,14 +213,17 @@ const ScoutDetailScreen = () => {
         }),
         <Text style={styles.tableCount}>{ataques.length}</Text>,
       ],
-  
+
       // Linha de Contra Ataque
       [
-        <Text style={[styles.specialLabel, { color: '#004fa3' }]}>C. Atk.</Text>,
+        <Text style={[styles.specialLabel, { color: '#004fa3' }]}>
+          C. Atk.
+        </Text>,
         ...qualities.map(quality => {
           const count = contraAtaques.filter(a => a.quality === quality).length;
           const total = contraAtaques.length;
-          const percentage = total > 0 ? ((count / total) * 100).toFixed(1) + '%' : '0%';
+          const percentage =
+            total > 0 ? ((count / total) * 100).toFixed(1) + '%' : '0%';
           return (
             <View style={styles.tableCell}>
               <Text style={styles.tableCount}>{count}</Text>
@@ -223,14 +236,14 @@ const ScoutDetailScreen = () => {
     ],
     opponent: {
       errosAdversario: filtered.filter(
-        (a) => a.playerId === "generic" && a.action === "Erro Adversário"
+        a => a.playerId === 'generic' && a.action === 'Erro Adversário',
       ).length,
       pontosAdversario: filtered.filter(
-        (a) => a.playerId === "generic" && a.action === "Ponto Adversário"
-      ).length
-    }    
+        a => a.playerId === 'generic' && a.action === 'Ponto Adversário',
+      ).length,
+    },
   };
-  
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -241,7 +254,9 @@ const ScoutDetailScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Relatório do Scout</Text>
+      <Text style={styles.title}>
+        {scoutName} - {scoutDate}
+      </Text>
 
       <View style={styles.pickerContainer}>
         <View style={styles.pickerFieldSet}>
@@ -309,8 +324,6 @@ const styles = StyleSheet.create({
     marginBottom: 26,
   },
   pickerFieldSet: {
-    display: 'flex',
-    flexDirection: 'row',
     width: '45%',
     gap: 6,
   },
@@ -318,6 +331,7 @@ const styles = StyleSheet.create({
     width: '100%',
     fontSize: 16,
     borderRadius: 5,
+    backgroundColor: '#fff',
   },
   label: {
     fontWeight: 'bold',
@@ -364,7 +378,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  
 });
 
 export default ScoutDetailScreen;
