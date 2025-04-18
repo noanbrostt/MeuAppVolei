@@ -13,6 +13,7 @@ import { db } from '../../src/config/firebaseConfig';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import WheelColorPicker from 'react-native-wheel-color-picker';
 import Modal from 'react-native-modal';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const EditTeamScreen = () => {
   const { id } = useLocalSearchParams();
@@ -69,7 +70,10 @@ const EditTeamScreen = () => {
           color: teamColor,
         });
         Alert.alert('Sucesso', 'Time atualizado com sucesso!', [
-          { text: 'OK', onPress: () => router.push('/screens/TeamsScreen') },
+          {
+            text: 'OK',
+            onPress: () => router.back(),
+          },
         ]);
       } else {
         Alert.alert('Erro', 'ID do time inválido para edição.');
@@ -110,6 +114,10 @@ const EditTeamScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Botão de voltar */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Icon name="chevron-left" size={24} color="#000" />
+      </TouchableOpacity>
       <Text style={styles.title}>Editar Time</Text>
       <TextInput
         style={styles.input}
@@ -160,11 +168,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 20, // espaço para botão de voltar
+  },
+  backButton: {
+    position: 'absolute',
+    top: 18,
+    left: 16,
+    zIndex: 1,
+    padding: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    alignSelf: 'center',
   },
   error: {
     color: 'red',

@@ -107,7 +107,7 @@ const ScoutSave: React.FC<ScoutSaveProps> = ({
 
   return (
     <TouchableOpacity style={styles.iconButton} onPress={confirmSaveSet}>
-      <Icon name="save" size={20} color="white" />
+      <Icon name="save" size={24} color="white" />
     </TouchableOpacity>
   );
 };

@@ -1,51 +1,53 @@
 // app/index.tsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  StatusBar,
-  FlatList,
-  ScrollView,
-  Alert,
   Dimensions,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import ScoutHistoryScreen from './screens/ScoutHistoryScreen';
-import TeamsScreen from './screens/TeamsScreen';
 
 export default function Index() {
   return (
-    <View>
+    <View style={styles.screenContainer}>
       <TouchableOpacity
         style={styles.screenButton}
-        onPress={() => router.replace(`/screens/TeamsScreen`)}
+        onPress={() => router.push(`/screens/TeamsScreen`)}
       >
-        <Text style={styles.screenText}>TeamsScreen</Text>
+        <Text style={styles.screenText}>Times</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
         style={styles.screenButton}
-        onPress={() => router.replace(`/screens/ScoutHistoryScreen`)}
+        onPress={() => router.push(`/screens/ScoutHistoryScreen`)}
       >
-        <Text style={styles.screenText}>ScoutHistoryScreen</Text>
+        <Text style={styles.screenText}>Scouts</Text>
       </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screenContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   screenButton: {
     backgroundColor: '#007bff',
     padding: 10,
     borderRadius: 5,
     marginVertical: 10,
-    alignItems: 'center',
+    alignSelf: 'center',
+    justifyContent: 'center',
+    width: Dimensions.get('window').width - 40,
   },
   screenText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
 });

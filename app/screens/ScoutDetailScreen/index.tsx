@@ -1,17 +1,19 @@
-import React, { act, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
+  TouchableOpacity,
 } from 'react-native';
+import { router } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { useLocalSearchParams } from 'expo-router';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../../../src/config/firebaseConfig';
-import { BarChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 import RadarChart from './RadarChart';
 import EfficiencyBarChart from './EfficiencyBarChart';
@@ -254,8 +256,15 @@ const ScoutDetailScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Botão de voltar */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Icon name="chevron-left" size={24} color="#000" />
+      </TouchableOpacity>
+
       <Text style={styles.title}>
-        {scoutName} - {scoutDate}
+        {scoutName}
+        {'\n'}
+        {scoutDate}
       </Text>
 
       <View style={styles.pickerContainer}>
@@ -310,6 +319,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 20, // espaço para botão de voltar
+  },
+  backButton: {
+    position: 'absolute',
+    top: -2,
+    left: 0,
+    zIndex: 1,
+    padding: 8,
   },
   centered: {
     flex: 1,
@@ -338,10 +355,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
     textAlign: 'center',
+    marginTop: -10,
   },
   graphTitle: {
     marginTop: 24,

@@ -21,6 +21,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Player {
   id: string;
@@ -43,36 +44,45 @@ const PlayersScreen = () => {
   const optionsButtonRef =
     useRef<React.ElementRef<typeof TouchableOpacity>>(null);
 
-  useEffect(() => {
-    const fetchPlayers = async () => {
-      if (!teamId) {
-        setError('ID do time não fornecido.');
-        setLoading(false);
-        return;
-      }
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchPlayers = async () => {
+        if (!teamId) {
+          setError('ID do time não fornecido.');
+          setLoading(false);
+          return;
+        }
 
-      try {
-        // Referência à subcoleção 'players' dentro do documento do time
-        const playersRef = collection(db, 'teams', teamId as string, 'players');
-        const q = query(playersRef, orderBy('fullName', 'asc')); // Filtra os jogadores do time (agora implícito na subcoleção)
+        try {
+          setLoading(true);
+          setError(null);
 
-        const querySnapshot = await getDocs(q);
-        const playersData = querySnapshot.docs.map(doc => ({
-          id: doc.id, // ID do documento do jogador dentro da subcoleção
-          ...doc.data(), // Dados do jogador
-        })) as Player[];
+          const playersRef = collection(
+            db,
+            'teams',
+            teamId as string,
+            'players',
+          );
+          const q = query(playersRef, orderBy('fullName', 'asc'));
 
-        setPlayers(playersData);
-      } catch (e) {
-        setError('Erro ao carregar os jogadores.');
-        console.error('Erro ao carregar os jogadores:', e);
-      } finally {
-        setLoading(false);
-      }
-    };
+          const querySnapshot = await getDocs(q);
+          const playersData = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Player[];
 
-    fetchPlayers();
-  }, [teamId]);
+          setPlayers(playersData);
+        } catch (e) {
+          setError('Erro ao carregar os jogadores.');
+          console.error('Erro ao carregar os jogadores:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchPlayers();
+    }, [teamId]),
+  );
 
   const handleDeletePlayer = async (playerId: string) => {
     Alert.alert(
@@ -185,6 +195,13 @@ const PlayersScreen = () => {
   return (
     <TouchableWithoutFeedback onPress={() => setSelectedPlayerId(null)}>
       <View style={styles.container}>
+        {/* Botão de voltar */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Icon name="chevron-left" size={24} color="#000" />
+        </TouchableOpacity>
         <Text style={styles.title}>Jogadores</Text>
         <FlatList
           data={players}
@@ -205,11 +222,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 20, // espaço para botão de voltar
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    position: 'absolute',
+    top: 18,
+    left: 16,
+    zIndex: 1,
+    padding: 8,
   },
   backButtonText: {
     marginLeft: 8,
@@ -219,6 +239,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    alignSelf: 'center',
   },
   playerItemContainer: {
     flexDirection: 'row',

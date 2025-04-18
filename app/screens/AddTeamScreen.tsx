@@ -13,6 +13,7 @@ import { db } from '../../src/config/firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
 import WheelColorPicker from 'react-native-wheel-color-picker';
 import Modal from 'react-native-modal';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const AddTeamScreen = () => {
   const [teamName, setTeamName] = useState('');
@@ -60,6 +61,10 @@ const AddTeamScreen = () => {
 
   return (
     <View style={styles.container}>
+              {/* Botão de voltar */}
+              <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                <Icon name="chevron-left" size={24} color="#000" />
+              </TouchableOpacity>
       <Text style={styles.title}>Adicionar Nova Equipe</Text>
       <TextInput
         style={styles.input}
@@ -111,11 +116,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 20, // espaço para botão de voltar
+  },
+  backButton: {
+    position: 'absolute',
+    top: 18,
+    left: 16,
+    zIndex: 1,
+    padding: 8,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    alignSelf: 'center',
   },
   input: {
     height: 40,

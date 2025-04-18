@@ -399,6 +399,13 @@ const ScoutScreen = () => {
       <StatusBar hidden={true} />
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
+          {/* Botão de voltar */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Icon name="chevron-left" size={24} color="#fff" />
+          </TouchableOpacity>
           <ScoutSave
             ourScore={ourScore}
             opponentScore={opponentScore}
@@ -422,7 +429,7 @@ const ScoutScreen = () => {
             onPress={handleSubstitution}
             disabled={loadingAllPlayers}
           >
-            <Icon name="exchange" size={20} color="white" />
+            <Icon name="exchange" size={24} color="white" />
           </TouchableOpacity>
         </View>
 
@@ -510,6 +517,9 @@ const styles = StyleSheet.create({
   topBarLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 8,
   },
   scoreText: {
     color: 'white',

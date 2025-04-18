@@ -11,13 +11,14 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { collection, getDocs, orderBy, query } from 'firebase/firestore';
 import { db } from '../../src/config/firebaseConfig';
 import { Timestamp } from 'firebase/firestore';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Scout {
   id: string;
   name: string;
   date: string;
   teamName: string;
-  savedAt: Timestamp; // Adicionando a propriedade savedAt
+  savedAt: Timestamp;
 }
 
 const ScoutHistoryScreen = () => {
@@ -25,42 +26,48 @@ const ScoutHistoryScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchScouts = async () => {
-      try {
-        // 1. Buscar times e montar dicionário
-        const teamsSnapshot = await getDocs(collection(db, 'teams'));
-        const teamsMap: Record<string, string> = {};
-        teamsSnapshot.forEach(doc => {
-          teamsMap[doc.id] = doc.data().name;
-        });
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchScouts = async () => {
+        try {
+          setLoading(true);
+          setError(null);
 
-        // 2. Buscar jogos (scouts) e ordenar por 'savedAt' em ordem decrescente
-        const gamesCollection = collection(db, 'games');
-        const gamesQuery = query(gamesCollection, orderBy('savedAt', 'desc'));
-        const gamesSnapshot = await getDocs(gamesQuery);
-        const scoutData: Scout[] = gamesSnapshot.docs.map(doc => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            name: data.name,
-            date: data.date,
-            teamName: teamsMap[data.teamId] || 'Time desconhecido',
-            savedAt: data.savedAt, // Capturando o timestamp
-          };
-        });
+          // Buscar times e montar dicionário
+          const teamsSnapshot = await getDocs(collection(db, 'teams'));
+          const teamsMap: Record<string, string> = {};
+          teamsSnapshot.forEach(doc => {
+            teamsMap[doc.id] = doc.data().name;
+          });
 
-        setScouts(scoutData);
-      } catch (err) {
-        console.error('Erro ao buscar scouts:', err);
-        setError('Erro ao carregar os dados');
-      } finally {
-        setLoading(false);
-      }
-    };
+          // Buscar scouts (jogos)
+          const gamesCollection = collection(db, 'games');
+          const gamesQuery = query(gamesCollection, orderBy('savedAt', 'desc'));
+          const gamesSnapshot = await getDocs(gamesQuery);
 
-    fetchScouts();
-  }, []);
+          const scoutData: Scout[] = gamesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              name: data.name,
+              date: data.date,
+              teamName: teamsMap[data.teamId] || 'Time desconhecido',
+              savedAt: data.savedAt,
+            };
+          });
+
+          setScouts(scoutData);
+        } catch (err) {
+          console.error('Erro ao buscar scouts:', err);
+          setError('Erro ao carregar os dados');
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchScouts();
+    }, []),
+  );
 
   const renderItem = ({ item }: { item: Scout }) => (
     <TouchableOpacity
@@ -85,7 +92,6 @@ const ScoutHistoryScreen = () => {
       <Icon name="chevron-right" size={20} color="#888" />
     </TouchableOpacity>
   );
-  
 
   if (loading) {
     return (
@@ -105,7 +111,13 @@ const ScoutHistoryScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Botão de voltar */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Icon name="chevron-left" size={24} color="#000" />
+      </TouchableOpacity>
+
       <Text style={styles.title}>Histórico de Scouts</Text>
+
       {scouts.length === 0 ? (
         <Text style={styles.emptyMessage}>Nenhum scout realizado ainda.</Text>
       ) : (
@@ -115,6 +127,7 @@ const ScoutHistoryScreen = () => {
           keyExtractor={item => item.id}
         />
       )}
+
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => router.push('/screens/ScoutAddScreen')}
@@ -129,11 +142,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 20, // espaço para botão de voltar
+  },
+  backButton: {
+    position: 'absolute',
+    top: 18,
+    left: 16,
+    zIndex: 1,
+    padding: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    alignSelf: 'center',
   },
   scoutItem: {
     flexDirection: 'row',

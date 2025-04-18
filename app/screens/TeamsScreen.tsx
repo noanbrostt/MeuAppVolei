@@ -8,7 +8,7 @@ import {
   TouchableWithoutFeedback,
   Alert,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, useRouter } from 'expo-router';
 import { db } from '../../src/config/firebaseConfig';
 import {
   collection,
@@ -18,7 +18,8 @@ import {
   query,
   orderBy,
 } from 'firebase/firestore';
-import Icon from 'react-native-vector-icons/FontAwesome'; // Importe os ícones
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { useFocusEffect } from '@react-navigation/native';
 
 interface Team {
   id: string;
@@ -27,32 +28,40 @@ interface Team {
 }
 
 const TeamsScreen = () => {
+  const router = useRouter();
   const [teams, setTeams] = useState<Team[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null); // Para controlar qual dropdown está visível
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchTeams = async () => {
-      try {
-        const teamsCollection = collection(db, 'teams');
-        const teamsQuery = query(teamsCollection, orderBy('name', 'asc'));
-        const teamsSnapshot = await getDocs(teamsQuery);
-        const teamsList = teamsSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Team[];
-        setTeams(teamsList);
-        setLoading(false);
-      } catch (e: any) {
-        setError('Erro ao carregar as equipes.');
-        console.error('Erro ao carregar as equipes:', e);
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchTeams = async () => {
+        try {
+          setLoading(true);
+          setError(null);
 
-    fetchTeams();
-  }, []);
+          const teamsCollection = collection(db, 'teams');
+          const teamsQuery = query(teamsCollection, orderBy('name', 'asc'));
+          const teamsSnapshot = await getDocs(teamsQuery);
+
+          const teamsList = teamsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          })) as Team[];
+
+          setTeams(teamsList);
+        } catch (e: any) {
+          setError('Erro ao carregar as equipes.');
+          console.error('Erro ao carregar as equipes:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchTeams();
+    }, []),
+  );
 
   const handleDeleteTeam = async (id: string) => {
     Alert.alert(
@@ -146,6 +155,14 @@ const TeamsScreen = () => {
   return (
     <TouchableWithoutFeedback onPress={() => setSelectedTeamId(null)}>
       <View style={styles.container}>
+        {/* Botão de voltar */}
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Icon name="chevron-left" size={24} color="#000" />
+        </TouchableOpacity>
+
         <Text style={styles.title}>Lista de Equipes</Text>
         <FlatList
           data={teams}
@@ -166,11 +183,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 20, // espaço para botão de voltar
+  },
+  backButton: {
+    position: 'absolute',
+    top: 18,
+    left: 16,
+    zIndex: 1,
+    padding: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
+    alignSelf: 'center',
   },
   teamItemContainer: {
     flexDirection: 'row',
@@ -180,12 +206,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 8,
     borderRadius: 5,
-    justifyContent: 'space-between', // Espaço entre o nome e as opções
+    justifyContent: 'space-between',
   },
   teamItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1, // Ocupa o espaço restante
+    flex: 1,
   },
   colorSquare: {
     width: 20,
@@ -195,7 +221,7 @@ const styles = StyleSheet.create({
   },
   teamName: {
     fontSize: 16,
-    flex: 1, // Permite que o nome cresça e empurre os botões para a direita
+    flex: 1,
   },
   optionsButton: {
     padding: 8,

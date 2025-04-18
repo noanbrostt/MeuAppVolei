@@ -75,15 +75,9 @@ const AddPlayerScreen = () => {
       Alert.alert('Atenção', 'Por favor, digite o nome completo do jogador.');
       return;
     }
-    if (!number.trim()) {
-      Alert.alert('Atenção', 'Por favor, digite o número do jogador.');
-      return;
-    }
+
     const parsedNumber = parseInt(number, 10);
-    if (isNaN(parsedNumber)) {
-      Alert.alert('Atenção', 'O número do jogador deve ser um valor numérico.');
-      return;
-    }
+
 
     setLoading(true);
     setError(null);
@@ -103,13 +97,12 @@ const AddPlayerScreen = () => {
           rg: rg.trim(),
           cpf: cpf.trim(),
           allergies: allergies.trim(),
-          // teamId: teamId, // Não precisa mais salvar o teamId explicitamente na subcoleção
         });
         Alert.alert('Sucesso', 'Jogador adicionado com sucesso!', [
           {
             text: 'OK',
             onPress: () =>
-              router.replace(`/screens/PlayersScreen?id=${teamId}`),
+              router.back(), // Volta para a tela anterior após adicionar o jogador
           },
         ]);
         setFullName('');
@@ -136,6 +129,11 @@ const AddPlayerScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Botão de voltar */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Icon name="chevron-left" size={24} color="#000" />
+      </TouchableOpacity>
+
       <Text style={styles.title}>Adicionar Jogador</Text>
       {error && <Text style={styles.error}>{error}</Text>}
 
@@ -155,7 +153,7 @@ const AddPlayerScreen = () => {
         onChangeText={setSurname}
       />
 
-      <Text style={styles.label}>Número*</Text>
+      <Text style={styles.label}>Número</Text>
       <TextInput
         style={styles.input}
         placeholder="Número do jogador"
@@ -260,11 +258,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 20, // espaço para botão de voltar
+  },
+  backButton: {
+    position: 'absolute',
+    top: -2,
+    left: -4,
+    zIndex: 1,
+    padding: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 24,
+    alignSelf: 'center',
   },
   error: {
     color: 'red',

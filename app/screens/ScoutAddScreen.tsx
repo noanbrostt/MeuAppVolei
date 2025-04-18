@@ -143,6 +143,11 @@ const ScoutAddScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Botão de voltar */}
+      <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+        <Icon name="chevron-left" size={24} color="#000" />
+      </TouchableOpacity>
+
       <Text style={styles.title}>Novo Scout</Text>
 
       <Text style={styles.label}>Nome do Scout</Text>
@@ -271,20 +276,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    paddingTop: 20, // espaço para botão de voltar
   },
   backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  backButtonText: {
-    marginLeft: 8,
-    fontSize: 16,
+    position: 'absolute',
+    top: -2,
+    left: 0,
+    zIndex: 1,
+    padding: 8,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 24,
+    alignSelf: 'center',
   },
   label: {
     marginTop: 16,
