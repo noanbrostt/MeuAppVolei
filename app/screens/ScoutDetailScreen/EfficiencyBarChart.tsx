@@ -8,9 +8,12 @@ type Props = {
   data: {
     [key: string]: {
       0: number;
+      1: number;
+      2: number;
       3: number;
     };
   };
+
   barColors?: {
     positive: string;
     negative: string;
@@ -66,7 +69,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#004fa3',
     padding: 12,
     borderRadius: 4,
   },
@@ -96,10 +99,15 @@ export default function EfficiencyBarChart({ data, barColors }: Props) {
 
   const keys = Object.keys(data);
 
-  const calcEfficiency = (item: { 0: number; 3: number }) => {
-    const total = item[0] + item[3];
+  const calcEfficiency = (item: {
+    0: number;
+    1: number;
+    2: number;
+    3: number;
+  }) => {
+    const total = item[0] + item[1] + item[2] + item[3];
     if (total === 0) return null;
-    return (item[3] - item[0]) / total;
+    return (item[3] + item[2] - (item[1] + item[0])) / total;
   };
 
   const formatPercentage = (value: number | null): string | null => {
@@ -263,8 +271,9 @@ export default function EfficiencyBarChart({ data, barColors }: Props) {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Como é calculada a eficiência?</Text>
           <Text style={styles.modalText}>
-            Eficiência = (Ações nível 3 + Ações nível 2) ÷ Total de Ações.
+            Eficiência = (Ações 3 + Ações 2 - Ações 1 - Ações 0) ÷ Total de Ações.
           </Text>
+
           <Text style={styles.modalTitle}>Eu errei ou não fiz essa ação?</Text>
           <Text style={styles.modalText}>
             Quando o fundamento fica cinza, significa que nenhuma ação desse

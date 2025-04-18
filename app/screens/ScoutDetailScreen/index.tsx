@@ -15,6 +15,7 @@ import { Dimensions } from 'react-native';
 
 import RadarChart from './RadarChart';
 import EfficiencyBarChart from './EfficiencyBarChart';
+import ActionTable from './ActionTable'; // Importe o novo componente
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -53,7 +54,9 @@ const ScoutDetailScreen = () => {
         ).sort();
         uniquePlayers.unshift('Time Todo');
 
-        const uniqueSets = Array.from(new Set(fetched.map(a => a.setId))).sort();
+        const uniqueSets = Array.from(
+          new Set(fetched.map(a => a.setId)),
+        ).sort();
         uniqueSets.unshift('Jogo inteiro');
 
         setPlayers(uniquePlayers);
@@ -81,7 +84,15 @@ const ScoutDetailScreen = () => {
     return acc;
   }, {});
 
-  const fundamentals = ['Passe', 'Defesa', 'Bloqueio', 'Ataque', 'Saque', 'Levantamento'];
+  const fundamentals = [
+    'Passe',
+    'Defesa',
+    'Bloqueio',
+    'Ataque',
+    'Saque',
+    'Levantamento',
+  ];
+  const qualities = [3, 2, 1, 0];
 
   const radarData = Object.fromEntries(
     fundamentals.map(action => {
@@ -99,11 +110,127 @@ const ScoutDetailScreen = () => {
       const items = filtered.filter(f => f.action === action);
       if (items.length === 0) return [action, 0.04141];
       const count0 = items.filter(i => i.quality === 0).length;
+      const count1 = items.filter(i => i.quality === 1).length;
+      const count2 = items.filter(i => i.quality === 2).length;
       const count3 = items.filter(i => i.quality === 3).length;
-      return [action, { 0: count0, 3: count3 }];
+      return [action, { 0: count0, 1: count1, 2: count2, 3: count3 }];
     }),
   );
 
+  const detectarJogadas = () => {
+    const ataques = [];
+    const contraAtaques = [];
+  
+    for (let i = 0; i < filtered.length; i++) {
+      const atual = filtered[i];
+      const segundo = filtered[i + 1];
+      const terceiro = filtered[i + 2];
+  
+      const verificarAtaque = (a1, a2, a3) => {
+        if (!a1 || a1.action !== 'Passe' && a1.action !== 'Defesa') return null;
+  
+        const acoesSeguintes = [a2, a3].filter(Boolean).map(a => a.action);
+  
+        const temAtaqueSimples = acoesSeguintes.includes('Ataque');
+        const temLevantEAtk =
+          acoesSeguintes.includes('Levantamento') &&
+          acoesSeguintes.includes('Ataque');
+  
+        if (a1.action === 'Passe' && (temAtaqueSimples || temLevantEAtk)) {
+          return 'Atk';
+        }
+  
+        if (a1.action === 'Defesa' && (temAtaqueSimples || temLevantEAtk)) {
+          return 'C. Atk.';
+        }
+  
+        return null;
+      };
+  
+      const tipo = verificarAtaque(atual, segundo, terceiro);
+      if (tipo === 'Atk') ataques.push(atual);
+      if (tipo === 'C. Atk.') contraAtaques.push(atual);
+    }
+  
+    return { ataques, contraAtaques };
+  };  
+
+  const { ataques, contraAtaques } = detectarJogadas();
+
+  const tableData = {
+    header: ['', ...qualities, 'Total'],
+    data: [
+      ...fundamentals.map(fundamento => {
+        const actionsByFundamento = filtered.filter(a => a.action === fundamento);
+        const totalActions = actionsByFundamento.length;
+  
+        return [
+          fundamento === 'Levantamento' ? 'Levant.' :
+          fundamento === 'Bloqueio' ? 'Bloq.' :
+          fundamento,
+          ...qualities.map(quality => {
+            const count = actionsByFundamento.filter(
+              a => a.quality === quality,
+            ).length;
+            const percentage =
+              totalActions > 0
+                ? ((count / totalActions) * 100).toFixed(1) + '%'
+                : '0%';
+            return (
+              <View style={styles.tableCell}>
+                <Text style={styles.tableCount}>{count}</Text>
+                <Text style={styles.tablePercentage}>{percentage}</Text>
+              </View>
+            );
+          }),
+          <Text style={styles.tableCount}>{totalActions}</Text>,
+        ];
+      }),
+  
+      // Linha de Ataque
+      [
+        <Text style={[styles.specialLabel, { color: '#004fa3' }]}>Atk.</Text>,
+        ...qualities.map(quality => {
+          const count = ataques.filter(a => a.quality === quality).length;
+          const total = ataques.length;
+          const percentage = total > 0 ? ((count / total) * 100).toFixed(1) + '%' : '0%';
+          return (
+            <View style={styles.tableCell}>
+              <Text style={styles.tableCount}>{count}</Text>
+              <Text style={styles.tablePercentage}>{percentage}</Text>
+            </View>
+          );
+        }),
+        <Text style={styles.tableCount}>{ataques.length}</Text>,
+      ],
+  
+      // Linha de Contra Ataque
+      [
+        <Text style={[styles.specialLabel, { color: '#004fa3' }]}>C. Atk.</Text>,
+        ...qualities.map(quality => {
+          const count = contraAtaques.filter(a => a.quality === quality).length;
+          const total = contraAtaques.length;
+          const percentage = total > 0 ? ((count / total) * 100).toFixed(1) + '%' : '0%';
+          return (
+            <View style={styles.tableCell}>
+              <Text style={styles.tableCount}>{count}</Text>
+              <Text style={styles.tablePercentage}>{percentage}</Text>
+            </View>
+          );
+        }),
+        <Text style={styles.tableCount}>{contraAtaques.length}</Text>,
+      ],
+    ],
+    opponent: {
+      errosAdversario: filtered.filter(
+        (a) => a.playerId === "generic" && a.action === "Erro Adversário"
+      ).length,
+      pontosAdversario: filtered.filter(
+        (a) => a.playerId === "generic" && a.action === "Ponto Adversário"
+      ).length
+    }    
+  };
+  
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -155,6 +282,7 @@ const ScoutDetailScreen = () => {
               neutral: '#BDBDBD',
             }}
           />
+          <ActionTable data={tableData} />
         </>
       ) : (
         <Text style={styles.noData}>Nenhuma ação para esse filtro.</Text>
@@ -218,6 +346,25 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: '#666',
   },
+  tableCell: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tableCount: {
+    textAlign: 'center',
+    fontSize: 16,
+  },
+  tablePercentage: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: 'gray',
+  },
+  specialLabel: {
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  
 });
 
 export default ScoutDetailScreen;

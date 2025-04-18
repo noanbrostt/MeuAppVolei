@@ -37,7 +37,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    alignItems: 'center', // Centraliza o conteúdo dentro do card
   },
   header: {
     flexDirection: 'row',
@@ -68,7 +67,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#6200ee',
+    backgroundColor: '#004fa3',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
