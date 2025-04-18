@@ -15,7 +15,8 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/app-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.noanbrostt.MeuAppVolei"
     },
     "web": {
       "bundler": "metro",
@@ -36,6 +37,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "13100b49-1d5d-4b72-a74c-2d1494eaa1e9"
+      }
     }
   }
 }
